@@ -1,0 +1,78 @@
+/*
+ * Definitions for SMA1305 Amp
+ * name : sma1305-i2s-soundcard-overlay.dts
+ * Compile for dts
+ * dtc -@ -I dts -O dtb -o sma1305-i2s-soundcard.dtbo sma1305-i2s-soundcard-overlay.dts
+ * sudo cp sma1305-i2s-soundcard.dtbo /boot/overlays
+ * adding dtoverlay sma1305-i2s-soundcard.dtbo in config.txt
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708";
+
+	fragment@0 {
+		target = <&i2s>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			fault_interrupt_pins: fault_interrupt_pins {
+				brcm,pins = <4>;
+				brcm,function = <0>; /* input */
+				brcm,pull = <2>; /* pull-up */
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "okay";
+
+			sma1305_amp: sma1305@1e {
+				#sound-dai-cells = <0>;
+
+				compatible = "siliconmitus,sma1305";
+				reg = <0x1e>;
+				init-vol = <0x32>;
+				//stereo-two-chip;
+				/* EXTERNAL_CLOCK_19_2   : 0x00,
+				 * EXTERNAL_CLOCK_24_576 : 0x01,
+				 * PLL_CLKIN_MCLK        : 0x02,
+				 * PLL_CLKIN_BCLK        : 0x03
+				 */
+				sma1305,gpio-int= <&gpio 4 0>;
+				sys-clk-id = <0x03>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&sound>;
+		__overlay__ {
+			compatible = "simple-audio-card";
+			simple-audio-card,name = "sma1305_soundcard";
+			simple-audio-card,format = "i2s";
+			simple-audio-card,bitclock-slave = <&codec_dai>;
+			simple-audio-card,frame-slave = <&codec_dai>;
+			status = "okay";
+			cpu_dai: simple-audio-card,cpu {
+				sound-dai = <&i2s>;
+			};
+			codec_dai: simple-audio-card,codec {
+				sound-dai = <&sma1305_amp>;
+			};
+		};
+	};
+};
