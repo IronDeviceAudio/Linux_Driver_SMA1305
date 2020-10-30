@@ -1,7 +1,7 @@
 /*
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r002, 2020.10.07
+ * r003, 2020.10.29
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -13,7 +13,6 @@
 #ifndef _SMA1305_H
 #define _SMA1305_H
 
-
 #define SMA1305_I2C_ADDR_00		0x1e
 #define SMA1305_I2C_ADDR_01		0x3e
 #define SMA1305_I2C_ADDR_10		0x5e
@@ -24,10 +23,24 @@
 #define SMA1305_PLL_CLKIN_MCLK			0x02
 #define SMA1305_PLL_CLKIN_BCLK			0x03
 
-#define SMA1305_SPEAKER_MODE			0x00 
-#define SMA1305_RECEIVER_MODE			0x01 
-#define SMA1305_OFFSET_DEFAULT_MODE		0x00 
-#define SMA1305_OFFSET_BURNING_MODE		0x01 
+#define SMA1305_SDO_ONE_CH			0x00
+#define SMA1305_SDO_TWO_CH_48			0x01
+#define SMA1305_SDO_TWO_CH_24			0x02
+
+#define SMA1305_SDO_DISABLE			0x00
+#define SMA1305_FORMAT_C			0x01
+#define SMA1305_MONO_MIX			0x02
+#define SMA1305_AFTER_DSP			0x03
+#define SMA1305_VRMS2_AVG			0x04
+#define SMA1305_VBAT_MON			0x05
+#define SMA1305_TEMP_MON			0x06
+#define SMA1305_AFTER_DELAY			0x07
+
+#define SMA1305_SPEAKER_MODE			0x00
+#define SMA1305_RECEIVER_MODE			0x01
+
+#define SMA1305_OFFSET_DEFAULT_MODE		0x00
+#define SMA1305_OFFSET_BURNING_MODE		0x01
 /*
  * SMA1305 Register Definition
  */
@@ -109,24 +122,24 @@
 #define SMA1305_90_CRESTLIM1			0x90
 #define SMA1305_91_CRESTLIM2			0x91
 #define SMA1305_92_FDPEC_CTRL1			0x92 
-#define SMA1305_93_INT_CTRL				0x93 
-#define SMA1305_94_BOOST_CTRL9			0x94 
-#define SMA1305_95_BOOST_CTRL10			0x95 
-#define SMA1305_96_BOOST_CTRL11			0x96 		 
-#define SMA1305_97_OTP_TRM0				0x97 		 
-#define SMA1305_98_OTP_TRM1				0x98		 
-#define SMA1305_99_OTP_TRM2				0x99		 
-#define SMA1305_9A_OTP_TRM3				0x9A		 
-#define SMA1305_9B_OTP_DATA0			0x9B		 
-#define SMA1305_9C_OTP_DATA1			0x9C		 
-#define SMA1305_9D_OTP_DATA2			0x9D		 
-#define SMA1305_9E_OTP_DATA3			0x9E		 
+#define SMA1305_93_INT_CTRL				0x93
+#define SMA1305_94_BOOST_CTRL9			0x94
+#define SMA1305_95_BOOST_CTRL10			0x95
+#define SMA1305_96_BOOST_CTRL11			0x96
+#define SMA1305_97_OTP_TRM0				0x97
+#define SMA1305_98_OTP_TRM1				0x98
+#define SMA1305_99_OTP_TRM2				0x99
+#define SMA1305_9A_OTP_TRM3				0x9A
+#define SMA1305_9B_OTP_DATA0			0x9B
+#define SMA1305_9C_OTP_DATA1			0x9C
+#define SMA1305_9D_OTP_DATA2			0x9D
+#define SMA1305_9E_OTP_DATA3			0x9E
 #define SMA1305_9F_OTP_CTRL				0x9F
 
 #define SMA1305_A0_PAD_CTRL0			0xA0
 #define	SMA1305_A1_PAD_CTRL1			0xA1
 #define SMA1305_A2_TOP_MAN1				0xA2
-#define SMA1305_A3_TOP_MAN2				0xA3  
+#define SMA1305_A3_TOP_MAN2				0xA3
 #define SMA1305_A4_TOP_MAN3				0xA4
 #define SMA1305_A5_TDM1					0xA5
 #define SMA1305_A6_TDM2					0xA6
@@ -185,6 +198,11 @@
 #define SPK_MONO			(1<<2)
 #define SPK_STEREO			(4<<2)
 
+/* Mono Mix */
+#define MONOMIX_MASK (1<<0)
+#define MONOMIX_OFF (0<<0)
+#define MONOMIX_ON (1<<0)
+
 /* PLL On/Off */
 #define PLL_MASK			(1<<6)
 #define PLL_ON				(0<<6)
@@ -214,6 +232,38 @@
 #define LOGIC_OUTPUT		(0<<3)
 #define HIGH_Z_OUTPUT		(1<<3)
 
+/* SDO Output2 */
+#define SDO_OUTPUT2_MASK	(1<<0)
+#define ONE_SDO_PER_CH		(0<<0)
+#define TWO_SDO_PER_CH		(1<<0)
+
+/* SDO Output3 */
+#define SDO_OUTPUT3_MASK	(1<<2)
+#define SDO_OUTPUT3_DIS		(0<<2)
+#define TWO_SDO_PER_CH_24K	(1<<2)
+
+/* SDO OUT1 Select*/
+#define SDO_OUT1_SEL_MASK	(7<<3)
+#define SDO1_DISABLE		(0<<3)
+#define SDO1_FORMAT_C		(1<<3)
+#define SDO1_MONO_MIX		(2<<3)
+#define SDO1_AFTER_DSP		(3<<3)
+#define SDO1_VRMS2_AVG		(4<<3)
+#define SDO1_VBAT_MON		(5<<3)
+#define SDO1_TEMP_MON		(6<<3)
+#define SDO1_AFTER_DELAY	(7<<3)
+
+/* SDO OUT0 Select*/
+#define SDO_OUT0_SEL_MASK	(7<<0)
+#define SDO0_DISABLE		(0<<0)
+#define SDO0_FORMAT_C		(1<<0)
+#define SDO0_MONO_MIX		(2<<0)
+#define SDO0_AFTER_DSP		(3<<0)
+#define SDO0_VRMS2_AVG		(4<<0)
+#define SDO0_VBAT_MON		(5<<0)
+#define SDO0_TEMP_MON		(6<<0)
+#define SDO0_AFTER_DELAY	(7<<0)
+
 /* INTERRUPT Operation */
 #define SEL_INT_MASK		(1<<2)
 #define INT_CLEAR_AUTO		(0<<2)
@@ -235,9 +285,17 @@
 #define I2S_FORMAT			(2<<5)
 #define TDM_FORMAT			(4<<5)
 
-#define TDM_TX_MODE_MASK (1<<6)
-#define TDM_TX_MONO (0<<6)
-#define TDM_TX_STEREO (1<<6)
+#define SCK_RATE_MASK	(3<<3)
+#define SCK_64FS	(0<<3)
+#define SCK_32FS	(2<<3)
+
+#define DATA_WIDTH_MASK	(3<<1)
+#define DATA_24BIT	(0<<1)
+#define DATA_16BIT	(3<<1)
+
+#define TDM_TX_MODE_MASK	(1<<6)
+#define TDM_TX_MONO	(0<<6)
+#define TDM_TX_STEREO	(1<<6)
 
 #define TDM_SLOT1_RX_POS_MASK (7<<3)
 #define TDM_SLOT1_RX_POS_0 (0<<3)
@@ -260,33 +318,33 @@
 #define TDM_SLOT2_RX_POS_7 (7<<0)
 
 /* TDM2 FORMAT : 0xA6 */
-#define TDM_DL_MASK (1<<7)
-#define TDM_DL_16 (0<<7)
-#define TDM_DL_32 (1<<7)
+#define TDM_DL_MASK	(1<<7)
+#define TDM_DL_16	(0<<7)
+#define TDM_DL_32	(1<<7)
 
-#define TDM_N_SLOT_MASK (1<<6)
-#define TDM_N_SLOT_4 (0<<6)
-#define TDM_N_SLOT_8 (1<<6)
+#define TDM_N_SLOT_MASK	(1<<6)
+#define TDM_N_SLOT_4	(0<<6)
+#define TDM_N_SLOT_8	(1<<6)
 
-#define TDM_SLOT1_TX_POS_MASK (7<<3)
-#define TDM_SLOT1_TX_POS_0 (0<<3)
-#define TDM_SLOT1_TX_POS_1 (1<<3)
-#define TDM_SLOT1_TX_POS_2 (2<<3)
-#define TDM_SLOT1_TX_POS_3 (3<<3)
-#define TDM_SLOT1_TX_POS_4 (4<<3)
-#define TDM_SLOT1_TX_POS_5 (5<<3)
-#define TDM_SLOT1_TX_POS_6 (6<<3)
-#define TDM_SLOT1_TX_POS_7 (7<<3)
+#define TDM_SLOT1_TX_POS_MASK	(7<<3)
+#define TDM_SLOT1_TX_POS_0	(0<<3)
+#define TDM_SLOT1_TX_POS_1	(1<<3)
+#define TDM_SLOT1_TX_POS_2	(2<<3)
+#define TDM_SLOT1_TX_POS_3	(3<<3)
+#define TDM_SLOT1_TX_POS_4	(4<<3)
+#define TDM_SLOT1_TX_POS_5	(5<<3)
+#define TDM_SLOT1_TX_POS_6	(6<<3)
+#define TDM_SLOT1_TX_POS_7	(7<<3)
 
-#define TDM_SLOT2_TX_POS_MASK (7<<0)
-#define TDM_SLOT2_TX_POS_0 (0<<0)
-#define TDM_SLOT2_TX_POS_1 (1<<0)
-#define TDM_SLOT2_TX_POS_2 (2<<0)
-#define TDM_SLOT2_TX_POS_3 (3<<0)
-#define TDM_SLOT2_TX_POS_4 (4<<0)
-#define TDM_SLOT2_TX_POS_5 (5<<0)
-#define TDM_SLOT2_TX_POS_6 (6<<0)
-#define TDM_SLOT2_TX_POS_7 (7<<0)
+#define TDM_SLOT2_TX_POS_MASK	(7<<0)
+#define TDM_SLOT2_TX_POS_0	(0<<0)
+#define TDM_SLOT2_TX_POS_1	(1<<0)
+#define TDM_SLOT2_TX_POS_2	(2<<0)
+#define TDM_SLOT2_TX_POS_3	(3<<0)
+#define TDM_SLOT2_TX_POS_4	(4<<0)
+#define TDM_SLOT2_TX_POS_5	(5<<0)
+#define TDM_SLOT2_TX_POS_6	(6<<0)
+#define TDM_SLOT2_TX_POS_7	(7<<0)
 
 /* OTP Trim SPK Offset */
 #define SPK_OFFS2_MSB_MASK	(1<<5)
@@ -295,7 +353,6 @@
 /* OTP Trim RCV Offset */
 #define RCV_OFFS2_MSB_MASK	(1<<7)
 #define RCV_OFFS2_MASK		(15<<4)
-
 
 /* OTP STATUS */
 #define OTP_STAT_MASK		(1<<6)
@@ -309,7 +366,6 @@
 #define OVP_BST_STATUS		(1<<4)
 #define POWER_FLAG			(1<<3)
 
-
 #define SCAN_CHK			(1<<7)
 #define OCP_SPK_STATUS		(1<<5)
 #define OCP_BST_STATUS		(1<<4)
@@ -318,6 +374,5 @@
 
 #define DEVICE_ID			(3<<3)
 #define REV_NUM_STATUS		(3<<0)
-
 
 #endif

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r002, 2020.10.07	- initial version  sma1305
+ * r003, 2020.10.29	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -96,6 +96,9 @@ struct sma1305_priv {
 	unsigned int last_bclk;
 	int irq;
 	int gpio_int;
+	unsigned int sdo_ch;
+	unsigned int sdo0_sel;
+	unsigned int sdo1_sel;
 	atomic_t irq_enabled;
 };
 
@@ -2347,7 +2350,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x16);
 		regmap_write(sma1305->regmap, SMA1305_38_POWER_METER, 0x01);
 		regmap_write(sma1305->regmap, SMA1305_39_PMT_HYS, 0x10);
-		/* ENV_TRA, BOP_CTRL power down */
+		/* ENV_TRA, BOP_CTRL Enable */
 		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
 		/* FLT_VDD_GAIN : 3.00V */
 		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0x80);
@@ -2359,7 +2362,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
 		/* HEAD_ROOM : 5'b01000 (1.180V) */
 		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x28);
-		/* Release Time : 88.33us */
+		/* Release Time : 83.33us */
 		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
 		break;
 	}
@@ -2684,15 +2687,8 @@ static int sma1305_startup(struct snd_soc_codec *codec)
 	regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
 			PLL_MASK, PLL_ON);
 
-	if (sma1305->stereo_two_chip == true) {
-		/* SPK Mode (Stereo) */
-		regmap_update_bits(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1,
-				SPK_MODE_MASK, SPK_STEREO);
-	} else {
-		/* SPK Mode (Mono) */
-		regmap_update_bits(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1,
-				SPK_MODE_MASK, SPK_MONO);
-	}
+	regmap_update_bits(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1,
+			SPK_MODE_MASK, SPK_STEREO);
 
 	regmap_update_bits(sma1305->regmap, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_ON);
@@ -2832,7 +2828,7 @@ static int sma1305_dac_feedback_event(struct snd_soc_dapm_widget *w,
 			regmap_update_bits(sma1305->regmap,
 				SMA1305_09_OUTPUT_CTRL,
 				PORT_CONFIG_MASK, OUTPUT_PORT_ENABLE);
-		regmap_update_bits(sma1305->regmap,
+			regmap_update_bits(sma1305->regmap,
 				SMA1305_A3_TOP_MAN2,
 				SDO_OUTPUT_MASK, LOGIC_OUTPUT);
 			break;
@@ -3039,14 +3035,30 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 			dev_info(codec->dev,
 				"%s set format SNDRV_PCM_FORMAT_S16_LE\n",
 				__func__);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					SCK_RATE_MASK, SCK_32FS);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					DATA_WIDTH_MASK, DATA_16BIT);
 			break;
 
 		case SNDRV_PCM_FORMAT_S24_LE:
 			dev_info(codec->dev,
 				"%s set format SNDRV_PCM_FORMAT_S24_LE\n",
 				__func__);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					SCK_RATE_MASK, SCK_64FS);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					DATA_WIDTH_MASK, DATA_24BIT);
 			break;
-
+		case SNDRV_PCM_FORMAT_S32_LE:
+			dev_info(codec->dev,
+				"%s set format SNDRV_PCM_FORMAT_S32_LE\n",
+				__func__);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					SCK_RATE_MASK, SCK_64FS);
+			regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+					DATA_WIDTH_MASK, DATA_24BIT);
+			break;
 		default:
 			dev_err(codec->dev,
 				"%s not support data bit : %d\n", __func__,
@@ -3097,6 +3109,20 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 			break;
 		}
 		break;
+	case 32:
+		switch (sma1305->format) {
+		case SND_SOC_DAIFMT_I2S:
+			input_format |= STANDARD_I2S;
+			break;
+		case SND_SOC_DAIFMT_LEFT_J:
+			input_format |= LJ;
+			break;
+		case SND_SOC_DAIFMT_RIGHT_J:
+			input_format |= RJ_24BIT;
+			break;
+		}
+		break;
+
 
 	default:
 		dev_err(codec->dev,
@@ -3314,63 +3340,18 @@ static int sma1305_set_bias_level(struct snd_soc_codec *codec,
 static irqreturn_t sma1305_isr(int irq, void *data)
 {
 	struct sma1305_priv *sma1305 = (struct sma1305_priv *) data;
-	int ret;
-	unsigned int status1_val, status2_val;
 
-	ret = regmap_read(sma1305->regmap, SMA1305_FA_STATUS1, &status1_val);
-	if (ret != 0) {
-		dev_err(sma1305->dev,
-			"failed to read SMA1305_FA_STATUS1 : %d\n", ret);
-		return IRQ_HANDLED;
-	}
-
-	ret = regmap_read(sma1305->regmap, SMA1305_FB_STATUS2, &status2_val);
-	if (ret != 0) {
-		dev_err(sma1305->dev,
-			"failed to read SMA1305_FB_STATUS2 : %d\n", ret);
-		return IRQ_HANDLED;
-	}
-
-	if (~status1_val & OT1_OK_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : OT1(Over Temperature Level 1)\n", __func__);
-		if ((!sma1305->isr_manual_mode)
-				&& (sma1305->check_fault_status)) {
-			if (sma1305->check_fault_period > 0)
-				queue_delayed_work(system_freezable_wq,
-					&sma1305->check_fault_work,
+	if ((!sma1305->isr_manual_mode)
+			&& (sma1305->check_fault_status)) {
+		if (sma1305->check_fault_period > 0)
+			queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work,
 					sma1305->check_fault_period * HZ);
-			else
-				queue_delayed_work(system_freezable_wq,
-					&sma1305->check_fault_work,
+		else
+			queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work,
 					CHECK_PERIOD_TIME * HZ);
-			return IRQ_HANDLED;
-		}
-	}
-
-	if (~status1_val & OT2_OK_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : OT2(Over Temperature Level 2)\n", __func__);
-	}
-	if (status1_val & UVLO_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : UVLO(Under Voltage Lock Out)\n", __func__);
-	}
-	if (status1_val & OVP_BST_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : OVP_BST(Over Voltage Protection)\n", __func__);
-	}
-	if (status2_val & OCP_SPK_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : OCP_SPK(Over Current Protect SPK)\n", __func__);
-	}
-	if (status2_val & OCP_BST_STATUS) {
-		dev_crit(sma1305->dev,
-			"%s : OCP_BST(Over Current Protect Boost)\n", __func__);
-	}
-	if ((status2_val & CLK_MON_STATUS) && (sma1305->amp_power_status)) {
-		dev_crit(sma1305->dev,
-			"%s : CLK_FAULT(No clock input)\n", __func__);
+		return IRQ_HANDLED;
 	}
 
 	if (sma1305->isr_manual_mode) {
@@ -3422,11 +3403,21 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	}
 
 	if (~status1_val & OT1_OK_STATUS) {
+		dev_crit(sma1305->dev,
+			"%s : OT1(Over Temperature Level 1)\n", __func__);
 		/* Volume control (Current Volume -3dB) */
 		if ((sma1305->cur_vol + 6) <= 0xFF)
 			regmap_write(sma1305->regmap,
 				SMA1305_0A_SPK_VOL, sma1305->cur_vol + 6);
 
+		if (sma1305->check_fault_period > 0)
+			queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work,
+					sma1305->check_fault_period * HZ);
+		else
+			queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work,
+					CHECK_PERIOD_TIME * HZ);
 		sma1305->tsdw_cnt++;
 	} else if (sma1305->tsdw_cnt) {
 		regmap_write(sma1305->regmap,
@@ -3460,18 +3451,6 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 			"%s : CLK_FAULT(No clock input)\n", __func__);
 	}
 
-	if ((sma1305->check_fault_status) && (sma1305->tsdw_cnt != 0)) {
-		if (sma1305->check_fault_period > 0)
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					sma1305->check_fault_period * HZ);
-		else
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					CHECK_PERIOD_TIME * HZ);
-	} else {
-		dev_crit(sma1305->dev, "%s : End\n", __func__);
-	}
 	mutex_unlock(&sma1305->lock);
 
 }
@@ -3531,7 +3510,41 @@ static int sma1305_reset(struct snd_soc_codec *codec)
 				RCV_OFFS2_MASK, 0);
 	regmap_update_bits(sma1305->regmap, SMA1305_93_INT_CTRL,
 			DIS_INT_MASK, HIGH_Z_INT);
+	switch (sma1305->sdo_ch) {
+	case SMA1305_SDO_TWO_CH_24:
+		regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
+			SDO_OUTPUT2_MASK, TWO_SDO_PER_CH);
+		regmap_update_bits(sma1305->regmap, SMA1305_A3_TOP_MAN2,
+			SDO_OUTPUT3_MASK, TWO_SDO_PER_CH_24K);
+		break;
+	case SMA1305_SDO_TWO_CH_48:
+		regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
+			SDO_OUTPUT2_MASK, TWO_SDO_PER_CH);
+		regmap_update_bits(sma1305->regmap, SMA1305_A3_TOP_MAN2,
+			SDO_OUTPUT3_MASK, SDO_OUTPUT3_DIS);
+	case SMA1305_SDO_ONE_CH:
+	default:
+		regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
+			SDO_OUTPUT2_MASK, ONE_SDO_PER_CH);
+		regmap_update_bits(sma1305->regmap, SMA1305_A3_TOP_MAN2,
+			SDO_OUTPUT3_MASK, SDO_OUTPUT3_DIS);
+		break;
+	}
+	regmap_update_bits(sma1305->regmap, SMA1305_09_OUTPUT_CTRL,
+			SDO_OUT0_SEL_MASK, sma1305->sdo0_sel);
+	regmap_update_bits(sma1305->regmap, SMA1305_09_OUTPUT_CTRL,
+			SDO_OUT1_SEL_MASK, sma1305->sdo1_sel);
 	regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, sma1305->init_vol);
+
+	if (sma1305->stereo_two_chip == true) {
+		/* MONO MIX Off */
+		regmap_update_bits(sma1305->regmap,
+		SMA1305_11_SYSTEM_CTRL2, MONOMIX_MASK, MONOMIX_OFF);
+	} else {
+		/* MONO MIX On */
+		regmap_update_bits(sma1305->regmap,
+		SMA1305_11_SYSTEM_CTRL2, MONOMIX_MASK, MONOMIX_ON);
+	}
 
 	dev_info(codec->dev,
 		"%s init_vol is 0x%x\n", __func__, sma1305->init_vol);
@@ -3731,7 +3744,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV002\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV003\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -3818,7 +3831,121 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			dev_info(&client->dev, "Use the internal PLL clock by default\n");
 			sma1305->sys_clk_id = SMA1305_PLL_CLKIN_BCLK;
 		}
-
+		if (!of_property_read_u32(np, "sdo-ch", &value)) {
+			switch (value) {
+			case SMA1305_SDO_ONE_CH:
+				dev_info(&client->dev,
+					"One SDO Output per Channel\n");
+				break;
+			case SMA1305_SDO_TWO_CH_48:
+				dev_info(&client->dev,
+					"Two SDO Outputs per Channel_48k\n");
+				break;
+			case SMA1305_SDO_TWO_CH_24:
+				dev_info(&client->dev,
+					"Two SDO Outputs per Channel_24k\n");
+				break;
+			default:
+				dev_err(&client->dev,
+					"Invalid sdo-ch: %d\n", value);
+				return -EINVAL;
+			}
+			sma1305->sdo_ch = value;
+		} else {
+			dev_info(&client->dev,
+				"One SDO Output per Channel\n");
+			sma1305->sdo_ch = SMA1305_SDO_ONE_CH;
+		}
+		if (!of_property_read_u32(np, "sdo0-sel", &value)) {
+			switch (value) {
+			case SMA1305_SDO_DISABLE:
+				dev_info(&client->dev,
+					"SDO0 Output disable\n");
+				break;
+			case SMA1305_FORMAT_C:
+				dev_info(&client->dev,
+					"SDO0 Format converter\n");
+				break;
+			case SMA1305_MONO_MIX:
+				dev_info(&client->dev,
+					"SDO0 Mono mixer output\n");
+				break;
+			case SMA1305_AFTER_DSP:
+				dev_info(&client->dev,
+					"SDO0 Speaker path after DSP\n");
+				break;
+			case SMA1305_VRMS2_AVG:
+				dev_info(&client->dev,
+					"SDO0 Vrms^2 average\n");
+				break;
+			case SMA1305_VBAT_MON:
+				dev_info(&client->dev,
+					"SDO0 Battery monitoring\n");
+				break;
+			case SMA1305_TEMP_MON:
+				dev_info(&client->dev,
+					"SDO0 Temperature monitoring\n");
+				break;
+			case SMA1305_AFTER_DELAY:
+				dev_info(&client->dev,
+					"SDO0 Speaker path after Delay\n");
+				break;
+			default:
+				dev_err(&client->dev,
+					"Invalid sdo0-sel: %d\n", value);
+				return -EINVAL;
+			}
+			sma1305->sdo0_sel = value;
+		} else {
+			dev_info(&client->dev,
+					"SDO0 Speaker path after Delay\n");
+			sma1305->sdo0_sel = SMA1305_AFTER_DELAY;
+		}
+		if (!of_property_read_u32(np, "sdo1-sel", &value)) {
+			switch (value) {
+			case SMA1305_SDO_DISABLE:
+				dev_info(&client->dev,
+					"SDO1 Output disable\n");
+				break;
+			case SMA1305_FORMAT_C:
+				dev_info(&client->dev,
+					"SDO1 Format converter\n");
+				break;
+			case SMA1305_MONO_MIX:
+				dev_info(&client->dev,
+					"SDO1 Mono mixer output\n");
+				break;
+			case SMA1305_AFTER_DSP:
+				dev_info(&client->dev,
+					"SDO1 Speaker path after DSP\n");
+				break;
+			case SMA1305_VRMS2_AVG:
+				dev_info(&client->dev,
+					"SDO1 Vrms^2 average\n");
+				break;
+			case SMA1305_VBAT_MON:
+				dev_info(&client->dev,
+					"SDO1 Battery monitoring\n");
+				break;
+			case SMA1305_TEMP_MON:
+				dev_info(&client->dev,
+					"SDO1 Temperature monitoring\n");
+				break;
+			case SMA1305_AFTER_DELAY:
+				dev_info(&client->dev,
+					"SDO1 Speaker path after Delay\n");
+				break;
+			default:
+				dev_err(&client->dev,
+					"Invalid sdo1-sel: %d\n", value);
+				return -EINVAL;
+			}
+			sma1305->sdo1_sel = (value<<3);
+		} else {
+			dev_info(&client->dev,
+					"SDO1 Output disable\n");
+			sma1305->sdo1_sel = SDO1_DISABLE;
+		}
 		sma1305->gpio_int = of_get_named_gpio(np,
 				"sma1305,gpio-int", 0);
 		if (!gpio_is_valid(sma1305->gpio_int)) {
