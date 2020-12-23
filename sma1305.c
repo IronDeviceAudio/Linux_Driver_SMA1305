@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r004, 2020.11.16	- initial version  sma1305
+ * r005, 2020.12.03	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -104,7 +104,9 @@ struct sma1305_priv {
 
 static struct sma1305_pll_match sma1305_pll_matches[] = {
 /* in_clk_name, out_clk_name, input_clk post_n, n, vco, p_cp */
+PLL_MATCH("1.411MHz",  "24.554MHz", 1411200,  0x05, 0xAE, 0x80, 0x10),
 PLL_MATCH("1.536MHz",  "24.576MHz", 1536000,  0x05, 0xA0, 0x80, 0x10),
+PLL_MATCH("2.822MHz",  "24.554MHz", 2822400,  0x05, 0x57, 0x80, 0x10),
 PLL_MATCH("3.072MHz",  "24.576MHz", 3072000,  0x05, 0x50, 0x80, 0x10),
 PLL_MATCH("6.144MHz",  "24.576MHz", 6144000,  0x05, 0x50, 0x80, 0x14),
 PLL_MATCH("12.288MHz", "24.576MHz", 12288000, 0x05, 0x50, 0x80, 0x18),
@@ -139,13 +141,6 @@ static const struct reg_default sma1305_reg_def[] = {
 	{ 0x12, 0x00 }, /* 0x12 SystemCTRL3  */
 	{ 0x13, 0x09 }, /* 0x13 Delay  */
 	{ 0x14, 0x12 }, /* 0x14 Modulator  */
-	{ 0x15, 0x00 }, /* 0x15 BassSpk1  */
-	{ 0x16, 0x08 }, /* 0x16 BassSpk2  */
-	{ 0x17, 0x08 }, /* 0x17 BassSpk3  */
-	{ 0x18, 0x21 }, /* 0x18 BassSpk4  */
-	{ 0x19, 0x11 }, /* 0x19 BassSpk5  */
-	{ 0x1A, 0x4B }, /* 0x1A BassSpk6  */
-	{ 0x1B, 0x0A }, /* 0x1B BassSpk7  */
 	{ 0x1C, 0x0F }, /* 0x1C BrownOut Protection20  */
 	{ 0x1D, 0x05 }, /* 0x1D BrownOut Protection0  */
 	{ 0x1E, 0xA1 }, /* 0x1E Tone Generator  */
@@ -1803,6 +1798,18 @@ static int sma1305_set_dt_off_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+/* 0x97~0x9A OTP Trimming 0~# Set */
+static int otp_trimming_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_97_OTP_TRM0);
+}
+
+static int otp_trimming_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_97_OTP_TRM0);
+}
 
 /* 0xA2[5:4] PLL_DIV */
 static const char * const sma1305_pll_div_text[] = {
@@ -2394,7 +2401,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		/* Delay Off */
 		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
 		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x12);
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
 		/* Tone Generator(Volume - Off) & Fine volume Bypass */
 		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
 		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
@@ -2687,6 +2694,10 @@ SOC_ENUM_EXT("Set Driver Deadtime", sma1305_set_dt_enum,
 	sma1305_set_dt_get, sma1305_set_dt_put),
 SOC_ENUM_EXT("Set Driver Off Deadtime", sma1305_set_dt_off_enum,
 	sma1305_set_dt_off_get, sma1305_set_dt_off_put),
+
+/* OTP_TRM [0x97 ~ 0x9A] */
+SND_SOC_BYTES_EXT("OTP Trimming", 4,
+	otp_trimming_get, otp_trimming_put),
 
 /* TOP_MAN1 [0xA2] */
 SOC_SINGLE("PLL Lock Skip Mode(1:Dis_0:En)",
@@ -3637,6 +3648,7 @@ static int sma1305_reset(struct snd_soc_component *component)
 			SDO_OUTPUT2_MASK, TWO_SDO_PER_CH);
 		regmap_update_bits(sma1305->regmap, SMA1305_A3_TOP_MAN2,
 			SDO_OUTPUT3_MASK, SDO_OUTPUT3_DIS);
+		break;
 	case SMA1305_SDO_ONE_CH:
 	default:
 		regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
@@ -3854,7 +3866,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV004\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV005\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
