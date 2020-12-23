@@ -13,3 +13,6 @@ REV005: PLL match table for 44.1KHz sample rate
 		HPF configuration
 		Setting change for 0.5W receiver mode
 		Mixer interface for trimming
+
+REV006: PLL configuration optimization for idle noise
+		Mixer interface string change
