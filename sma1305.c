@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r006, 2020.12.23	- initial version  sma1305
+ * r007, 2020.12.24	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -2806,7 +2806,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 			PLL_MASK, PLL_ON);
 
 	regmap_update_bits(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1,
-			SPK_MODE_MASK, SPK_STEREO);
+			SPK_MODE_MASK, SPK_MONO);
 
 	regmap_update_bits(sma1305->regmap, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_ON);
@@ -3459,18 +3459,9 @@ static irqreturn_t sma1305_isr(int irq, void *data)
 {
 	struct sma1305_priv *sma1305 = (struct sma1305_priv *) data;
 
-	if ((!sma1305->isr_manual_mode)
-			&& (sma1305->check_fault_status)) {
-		if (sma1305->check_fault_period > 0)
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					sma1305->check_fault_period * HZ);
-		else
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					CHECK_PERIOD_TIME * HZ);
-		return IRQ_HANDLED;
-	}
+	if (sma1305->check_fault_status)
+		queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work, 0);
 
 	if (sma1305->isr_manual_mode) {
 		regmap_update_bits(sma1305->regmap, SMA1305_93_INT_CTRL,
@@ -3489,6 +3480,8 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	unsigned int status1_val, status2_val;
 
 	mutex_lock(&sma1305->lock);
+
+	dev_info(sma1305->dev, "%s\n", __func__);
 
 	if (sma1305->tsdw_cnt)
 		ret = regmap_read(sma1305->regmap,
@@ -3866,7 +3859,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV006\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV007\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4103,7 +4096,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		sma1305_check_fault_worker);
 	sma1305->check_fault_period = CHECK_PERIOD_TIME;
 	sma1305->check_fault_status = true;
-	sma1305->isr_manual_mode = false;
+	sma1305->isr_manual_mode = true;
 
 	sma1305->devtype = id->driver_data;
 	sma1305->dev = &client->dev;
@@ -4140,7 +4133,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		} else {
 		/* Request system IRQ for SMA1305 */
 			ret = request_threaded_irq(sma1305->irq,
-				NULL, sma1305_isr, IRQF_ONESHOT |
+				NULL, sma1305_isr, IRQF_ONESHOT | IRQF_SHARED |
 				IRQF_TRIGGER_FALLING, "sma1305", sma1305);
 			if (ret < 0) {
 				dev_err(&client->dev, "failed to request IRQ(%u) [%d]\n",

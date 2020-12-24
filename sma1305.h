@@ -1,7 +1,7 @@
 /*
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r006, 2020.12.23
+ * r007, 2020.12.24
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
