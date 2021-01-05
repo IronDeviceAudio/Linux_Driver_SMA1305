@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r007, 2020.12.24	- initial version  sma1305
+ * r008, 2021.01.06	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -94,6 +94,7 @@ struct sma1305_priv {
 	struct device *dev;
 	unsigned int rev_num;
 	unsigned int last_bclk;
+	unsigned int frame_size;
 	int irq;
 	int gpio_int;
 	unsigned int sdo_ch;
@@ -206,6 +207,8 @@ static const struct reg_default sma1305_reg_def[] = {
 
 static bool sma1305_readable_register(struct device *dev, unsigned int reg)
 {
+	bool result;
+
 	if (reg > SMA1305_FF_DEVICE_INDEX)
 		return false;
 
@@ -219,14 +222,18 @@ static bool sma1305_readable_register(struct device *dev, unsigned int reg)
 	case SMA1305_F5_READY_FOR_V_SAR:
 	case SMA1305_F7_READY_FOR_T_SAR ... SMA1305_FD_STATUS4:
 	case SMA1305_FF_DEVICE_INDEX:
-		return true;
+		result = true;
+		break;
 	default:
-		return false;
+		result = false;
 	}
+	return result;
 }
 
 static bool sma1305_writeable_register(struct device *dev, unsigned int reg)
 {
+	bool result;
+
 	if (reg > SMA1305_FF_DEVICE_INDEX)
 		return false;
 
@@ -237,10 +244,12 @@ static bool sma1305_writeable_register(struct device *dev, unsigned int reg)
 	case SMA1305_3B_TEST1 ... SMA1305_3F_ATEST2:
 	case SMA1305_8B_PLL_POST_N ... SMA1305_9A_OTP_TRM3:
 	case SMA1305_A0_PAD_CTRL0 ... SMA1305_B5_PRVALUE2:
-		return true;
+		result = true;
+		break;
 	default:
-		return false;
+		result = false;
 	}
+	return result;
 }
 
 static bool sma1305_volatile_register(struct device *dev, unsigned int reg)
@@ -3039,7 +3048,12 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 	struct snd_soc_component *component = dai->component;
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int input_format = 0;
-	unsigned int bclk = params_rate(params) * params_physical_width(params)
+	unsigned int bclk = 0;
+
+	if (sma1305->format == SND_SOC_DAIFMT_DSP_A)
+		bclk = params_rate(params) * sma1305->frame_size;
+	else
+		bclk = params_rate(params) * params_physical_width(params)
 			* params_channels(params);
 
 	dev_info(component->dev,
@@ -3102,48 +3116,6 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 		return -EINVAL;
 		}
 
-		/* Setting TDM Rx operation */
-		if (sma1305->format == SND_SOC_DAIFMT_DSP_A) {
-			regmap_update_bits(sma1305->regmap,
-				SMA1305_A4_TOP_MAN3,
-				INTERFACE_MASK, TDM_FORMAT);
-			switch (params_physical_width(params)) {
-			case 16:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_DL_MASK, TDM_DL_16);
-			break;
-			case 32:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_DL_MASK, TDM_DL_32);
-			break;
-
-			default:
-			dev_err(component->dev, "%s not support TDM %d bit\n",
-				__func__, params_physical_width(params));
-			}
-			switch (params_channels(params)) {
-			case 4:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_N_SLOT_MASK, TDM_N_SLOT_4);
-			break;
-			case 8:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_N_SLOT_MASK, TDM_N_SLOT_8);
-			break;
-			default:
-			dev_err(component->dev, "%s not support TDM %d channel\n",
-				__func__, params_channels(params));
-			}
-			/* Select a slot to process TDM Rx data */
-			if (sma1305->tdm_slot_rx < params_channels(params))
-				regmap_update_bits(sma1305->regmap,
-					SMA1305_A5_TDM1, TDM_SLOT1_RX_POS_MASK,
-					(sma1305->tdm_slot_rx) << 3);
-			else
-				dev_err(component->dev, "%s Incorrect tdm-slot-rx %d set\n",
-					__func__, sma1305->tdm_slot_rx);
-		}
-
 	/* substream->stream is SNDRV_PCM_STREAM_CAPTURE */
 	} else {
 
@@ -3183,20 +3155,6 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 						params_format(params));
 			return -EINVAL;
 
-		}
-
-		/* Setting TDM Tx operation */
-		if (sma1305->format == SND_SOC_DAIFMT_DSP_A) {
-			regmap_update_bits(sma1305->regmap, SMA1305_A5_TDM1,
-					TDM_TX_MODE_MASK, TDM_TX_MONO);
-			/* Select a slot to process TDM Tx data */
-			if (sma1305->tdm_slot_tx < params_channels(params))
-				regmap_update_bits(sma1305->regmap,
-					SMA1305_A6_TDM2, TDM_SLOT1_TX_POS_MASK,
-					(sma1305->tdm_slot_tx) << 3);
-			else
-				dev_err(component->dev, "%s Incorrect tdm-slot-tx %d set\n",
-					__func__, sma1305->tdm_slot_tx);
 		}
 	}
 
@@ -3387,11 +3345,79 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 	return 0;
 }
 
+static int sma1305_dai_set_tdm_slot(struct snd_soc_dai *dai,
+				   unsigned int tx_mask, unsigned int rx_mask,
+				   int slots, int slot_width)
+{
+	struct snd_soc_component *component  = dai->component;
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	dev_info(component->dev, "%s : slots - %d, slot_width - %d\n",
+			__func__, slots, slot_width);
+
+	sma1305->frame_size = slot_width * slots;
+
+	regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+		INTERFACE_MASK, TDM_FORMAT);
+
+	switch (slot_width) {
+	case 16:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_DL_MASK, TDM_DL_16);
+	break;
+	case 32:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_DL_MASK, TDM_DL_32);
+	break;
+
+	default:
+	dev_err(component->dev, "%s not support TDM %d slot_width\n",
+		__func__, slot_width);
+	}
+
+	switch (slots) {
+	case 4:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_N_SLOT_MASK, TDM_N_SLOT_4);
+	break;
+	case 8:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_N_SLOT_MASK, TDM_N_SLOT_8);
+	break;
+	default:
+	dev_err(component->dev, "%s not support TDM %d slots\n",
+		__func__, slots);
+	}
+
+	/* Select a slot to process TDM Rx data */
+	if (sma1305->tdm_slot_rx < slots)
+		regmap_update_bits(sma1305->regmap,
+			SMA1305_A5_TDM1, TDM_SLOT1_RX_POS_MASK,
+			(sma1305->tdm_slot_rx) << 3);
+	else
+		dev_err(component->dev, "%s Incorrect tdm-slot-rx %d set\n",
+			__func__, sma1305->tdm_slot_rx);
+
+	regmap_update_bits(sma1305->regmap, SMA1305_A5_TDM1,
+			TDM_TX_MODE_MASK, TDM_TX_MONO);
+	/* Select a slot to process TDM Tx data */
+	if (sma1305->tdm_slot_tx < slots)
+		regmap_update_bits(sma1305->regmap,
+			SMA1305_A6_TDM2, TDM_SLOT1_TX_POS_MASK,
+			(sma1305->tdm_slot_tx) << 3);
+	else
+		dev_err(component->dev, "%s Incorrect tdm-slot-tx %d set\n",
+			__func__, sma1305->tdm_slot_tx);
+
+	return 0;
+}
+
 static const struct snd_soc_dai_ops sma1305_dai_ops_amp = {
 	.set_sysclk = sma1305_dai_set_sysclk_amp,
 	.set_fmt = sma1305_dai_set_fmt_amp,
 	.hw_params = sma1305_dai_hw_params_amp,
 	.digital_mute = sma1305_dai_digital_mute,
+	.set_tdm_slot	= sma1305_dai_set_tdm_slot,
 };
 
 #define SMA1305_RATES_PLAYBACK SNDRV_PCM_RATE_8000_96000
@@ -3859,7 +3885,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV007\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV008\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -3874,8 +3900,9 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		dev_err(&client->dev,
 			"Failed to allocate register map: %d\n", ret);
 
-		if (sma1305->regmap)
-			regmap_exit(sma1305->regmap);
+		/* Comment out the code due to GKI build error */
+//		if (sma1305->regmap)
+//			regmap_exit(sma1305->regmap);
 
 		devm_kfree(&client->dev, sma1305);
 
@@ -4134,7 +4161,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		/* Request system IRQ for SMA1305 */
 			ret = request_threaded_irq(sma1305->irq,
 				NULL, sma1305_isr, IRQF_ONESHOT | IRQF_SHARED |
-				IRQF_TRIGGER_FALLING, "sma1305", sma1305);
+				IRQF_TRIGGER_LOW, "sma1305", sma1305);
 			if (ret < 0) {
 				dev_err(&client->dev, "failed to request IRQ(%u) [%d]\n",
 						sma1305->irq, ret);
