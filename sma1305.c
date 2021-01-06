@@ -219,8 +219,12 @@ static bool sma1305_readable_register(struct device *dev, unsigned int reg)
 	case SMA1305_3B_TEST1 ... SMA1305_3F_ATEST2:
 	case SMA1305_8B_PLL_POST_N ... SMA1305_9A_OTP_TRM3:
 	case SMA1305_A0_PAD_CTRL0 ... SMA1305_B5_PRVALUE2:
-	case SMA1305_F5_READY_FOR_V_SAR:
 	case SMA1305_F7_READY_FOR_T_SAR ... SMA1305_FD_STATUS4:
+		result = true;
+		break;
+	case SMA1305_F5_READY_FOR_V_SAR:
+		result = true;
+		break;
 	case SMA1305_FF_DEVICE_INDEX:
 		result = true;
 		break;
@@ -3274,24 +3278,24 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 
 	case SND_SOC_DAIFMT_CBS_CFS:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "I2S/TDM Slave mode");
-		/* I2S/PCM clock mode - slave mode */
+			"%s : %s\n", __func__, "I2S/TDM Device mode");
+		/* I2S/PCM clock mode - Device mode */
 		regmap_update_bits(sma1305->regmap, SMA1305_01_INPUT_CTRL1,
-					MASTER_SLAVE_MASK, SLAVE_MODE);
+					CONTROLLER_DEVICE_MASK, DEVICE_MODE);
 
 		break;
 
 	case SND_SOC_DAIFMT_CBM_CFM:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "I2S/TDM Master mode");
-		/* I2S/PCM clock mode - master mode */
+			"%s : %s\n", __func__, "I2S/TDM Controller mode");
+		/* I2S/PCM clock mode - Controller mode */
 		regmap_update_bits(sma1305->regmap, SMA1305_01_INPUT_CTRL1,
-					MASTER_SLAVE_MASK, MASTER_MODE);
+				CONTROLLER_DEVICE_MASK, CONTROLLER_MODE);
 		break;
 
 	default:
 		dev_err(component->dev,
-				"Unsupported Master/Slave : 0x%x\n", fmt);
+				"Unsupported Controller/Device : 0x%x\n", fmt);
 		return -EINVAL;
 	}
 

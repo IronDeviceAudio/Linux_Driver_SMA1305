@@ -209,10 +209,10 @@
 #define RJ_20BIT			(6<<4)
 #define RJ_24BIT			(7<<4)
 
-/* Master / Slave Setting */
-#define MASTER_SLAVE_MASK	(1<<7)
-#define SLAVE_MODE			(0<<7)
-#define MASTER_MODE			(1<<7)
+/* Controller / Device Setting */
+#define CONTROLLER_DEVICE_MASK	(1<<7)
+#define DEVICE_MODE			(0<<7)
+#define CONTROLLER_MODE			(1<<7)
 
 /* Port Config */
 #define PORT_CONFIG_MASK	(3<<6)
