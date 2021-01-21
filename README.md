@@ -19,3 +19,9 @@ REV006: PLL configuration optimization for idle noise.
 
 REV007: Interrupt sharing.
 		Speaker output to mono.
+		
+REV008: TDM interface at codec DAI.
+		Compliance of GKI.
+		Interrupt detection at low level.
+
+REV009: Error return in i2c fail.
