@@ -3711,9 +3711,6 @@ static int sma1305_reset(struct snd_soc_component *component)
 		SMA1305_11_SYSTEM_CTRL2, MONOMIX_MASK, MONOMIX_ON);
 	}
 
-	dev_info(component->dev,
-		"%s init_vol is 0x%x\n", __func__, sma1305->init_vol);
-
 	return 0;
 }
 
