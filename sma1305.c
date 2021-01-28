@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r009, 2021.01.21	- initial version  sma1305
+ * r010, 2021.01.21	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -115,8 +115,11 @@ PLL_MATCH("19.2MHz",   "24.48MHz", 19200000, 0x06, 0x7B, 0x88, 0x0C),
 PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
 };
 
+static struct snd_soc_component *sma1305_amp_component;
+
 static int sma1305_startup(struct snd_soc_component *);
 static int sma1305_shutdown(struct snd_soc_component *);
+static int sma1305_spk_rcv_conf(struct snd_soc_component *);
 
 /* Initial register value - 4W SPK 2020.09.25 */
 static const struct reg_default sma1305_reg_def[] = {
@@ -2357,136 +2360,8 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 
 	sma1305->spk_rcv_mode = ucontrol->value.integer.value[0];
 
-	if ((sma1305->spk_rcv_mode < 0) ||
-	(sma1305->spk_rcv_mode > 2))
-		return -EINVAL;
+	sma1305_spk_rcv_conf(component);
 
-	switch (sma1305->spk_rcv_mode) {
-	case SMA1305_RECEIVER_0P1W_MODE:
-		/* SPK Volume : -1.0dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
-		/* Shoot Through Protection : Enable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
-		/* VBAT & Temperature Sensing Off, LPF Bypass */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
-		/* Delay Off */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
-		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
-		/* Tone Generator(Volume - Off) & Fine volume Bypass */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
-		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
-		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, High R(64kohm), RCVx0.5 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x40);
-		/* ENV_TRA, BOP_CTRL Enable */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
-		/* OTA GM : 10uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
-		/* FLT_VDD_GAIN : 3.15V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
-		 * Ramp Compensation : 4.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
-		/* High P-gain, OCL : 5.1A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
-		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
-		/* Min V : 5'b00101 (0.53V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
-		/* HEAD_ROOM : 5'b00111 (0.747V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
-		/* Boost Max : 5'b10100 (8.53V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
-		/* Release Time : 88.54us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
-		break;
-	case SMA1305_RECEIVER_0P5W_MODE:
-		/* SPK Volume : -1.5dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x33);
-		/* Shoot Through Protection : Enable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
-		/* VBAT & Temperature Sensing Off, LPF Bypass */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
-		/* Delay Off */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
-		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
-		/* Tone Generator(Volume - Off) & Fine volume Bypass */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
-		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
-		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, Low R(10kohm), RCVx1.1 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x45);
-		/* ENV_TRA, BOP_CTRL power down */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
-		/* OTA GM : 10uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
-		/* FLT_VDD_GAIN : 3.20V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xC0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
-		 * Ramp Compensation : 4.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
-		/* High P-gain, OCL : 5.1A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
-		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
-		/* Min V : 5'b00101 (0.53V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
-		/* HEAD_ROOM : 5'b00111 (0.747V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
-		/* Boost Max : 5'b10100 (8.53V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
-		/* Release Time : 88.54us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
-		break;
-	case SMA1305_SPEAKER_MODE:
-	default:
-		/* SPK Volume : -1.0dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
-		/* Shoot Through Protection : Disable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0x50);
-		/* VBAT & Temperature Sensing On, LPF Activate */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0x08);
-		/* Delay On - 200us */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x09);
-		/* HYSFB : 625kHz, BDELAY : 6'b010010 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x12);
-		/* Tone Generator(Volume - Off) & Fine volume Activate */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xA1);
-		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x7A);
-		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x16);
-		/* ENV_TRA, BOP_CTRL Enable */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
-		/* OTA GM : 20uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x02);
-		/* FLT_VDD_GAIN : 3.15V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
-		 * Ramp Compensation : 7.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0xA4);
-		/* High P-gain, OCL : 4.0A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x54);
-		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
-		/* Min V : 5'b00101 (0.59V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x04);
-		/* HEAD_ROOM : 5'b01000 (1.327V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x29);
-		/* Boost Max : 5'b10001 (10.03V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x11);
-		/* Release Time : 83.33us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
-		break;
-	}
 	return 0;
 }
 
@@ -2802,6 +2677,146 @@ SOC_ENUM_EXT("Speaker/Receiver Mode",
 	speaker_receiver_mode_get, speaker_receiver_mode_put),
 };
 
+static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
+{
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	if ((sma1305->spk_rcv_mode < 0) ||
+	(sma1305->spk_rcv_mode > 2))
+		return -EINVAL;
+
+	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
+			speaker_receiver_mode_text[sma1305->spk_rcv_mode]);
+
+	switch (sma1305->spk_rcv_mode) {
+	case SMA1305_RECEIVER_0P1W_MODE:
+		/* SPK Volume : -1.0dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
+		/* Shoot Through Protection : Enable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
+		/* VBAT & Temperature Sensing Off, LPF Bypass */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
+		/* Delay Off */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
+		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
+		/* Tone Generator(Volume - Off) & Fine volume Bypass */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
+		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
+		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, High R(64kohm), RCVx0.5 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x40);
+		/* ENV_TRA, BOP_CTRL Enable */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
+		/* OTA GM : 10uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
+		/* FLT_VDD_GAIN : 3.15V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
+		 * Ramp Compensation : 4.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
+		/* High P-gain, OCL : 5.1A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
+		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
+		/* Min V : 5'b00101 (0.53V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
+		/* HEAD_ROOM : 5'b00111 (0.747V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
+		/* Boost Max : 5'b10100 (8.53V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
+		/* Release Time : 88.54us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
+		break;
+	case SMA1305_RECEIVER_0P5W_MODE:
+		/* SPK Volume : -1.5dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x33);
+		/* Shoot Through Protection : Enable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
+		/* VBAT & Temperature Sensing Off, LPF Bypass */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
+		/* Delay Off */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
+		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
+		/* Tone Generator(Volume - Off) & Fine volume Bypass */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
+		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
+		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, Low R(10kohm), RCVx1.1 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x45);
+		/* ENV_TRA, BOP_CTRL power down */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
+		/* OTA GM : 10uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
+		/* FLT_VDD_GAIN : 3.20V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xC0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
+		 * Ramp Compensation : 4.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
+		/* High P-gain, OCL : 5.1A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
+		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
+		/* Min V : 5'b00101 (0.53V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
+		/* HEAD_ROOM : 5'b00111 (0.747V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
+		/* Boost Max : 5'b10100 (8.53V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
+		/* Release Time : 88.54us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
+		break;
+	case SMA1305_SPEAKER_MODE:
+	default:
+		/* SPK Volume : -1.0dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
+		/* Shoot Through Protection : Disable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0x50);
+		/* VBAT & Temperature Sensing On, LPF Activate */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0x08);
+		/* Delay On - 200us */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x09);
+		/* HYSFB : 625kHz, BDELAY : 6'b010010 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x12);
+		/* Tone Generator(Volume - Off) & Fine volume Activate */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xA1);
+		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x7A);
+		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x16);
+		/* ENV_TRA, BOP_CTRL Enable */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
+		/* OTA GM : 20uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x02);
+		/* FLT_VDD_GAIN : 3.15V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
+		 * Ramp Compensation : 7.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0xA4);
+		/* High P-gain, OCL : 4.0A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x54);
+		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
+		/* Min V : 5'b00101 (0.59V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x04);
+		/* HEAD_ROOM : 5'b01000 (1.327V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x29);
+		/* Boost Max : 5'b10001 (10.03V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x11);
+		/* Release Time : 83.33us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		break;
+	}
+
+	return 0;
+}
 
 static int sma1305_startup(struct snd_soc_component *component)
 {
@@ -3421,7 +3436,7 @@ static const struct snd_soc_dai_ops sma1305_dai_ops_amp = {
 	.set_fmt = sma1305_dai_set_fmt_amp,
 	.hw_params = sma1305_dai_hw_params_amp,
 	.digital_mute = sma1305_dai_digital_mute,
-	.set_tdm_slot	= sma1305_dai_set_tdm_slot,
+	.set_tdm_slot = sma1305_dai_set_tdm_slot,
 };
 
 #define SMA1305_RATES_PLAYBACK SNDRV_PCM_RATE_8000_96000
@@ -3702,6 +3717,22 @@ static int sma1305_reset(struct snd_soc_component *component)
 	return 0;
 }
 
+int get_sma_amp_component(struct snd_soc_component **component)
+{
+	*component = sma1305_amp_component;
+	return 0;
+}
+EXPORT_SYMBOL(get_sma_amp_component);
+
+int sma1305_reinit(struct snd_soc_component *component)
+{
+	sma1305_reset(component);
+	sma1305_spk_rcv_conf(component);
+
+	return 0;
+}
+EXPORT_SYMBOL(sma1305_reinit);
+
 static ssize_t check_fault_period_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
 {
@@ -3838,6 +3869,7 @@ static int sma1305_probe(struct snd_soc_component *component)
 
 	snd_soc_dapm_sync(dapm);
 
+	sma1305_amp_component = component;
 	sma1305_reset(component);
 
 	return 0;
@@ -3889,7 +3921,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV009\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV010\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

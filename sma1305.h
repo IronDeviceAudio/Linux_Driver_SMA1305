@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r009, 2021.01.21
+ * r010, 2021.01.21
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -12,6 +12,11 @@
 
 #ifndef _SMA1305_H
 #define _SMA1305_H
+
+#include <sound/soc.h>
+
+int sma1305_reinit(struct snd_soc_component *component);
+int get_sma_amp_component(struct snd_soc_component **component);
 
 #define SMA1305_I2C_ADDR_00		0x1e
 #define SMA1305_I2C_ADDR_01		0x3e
