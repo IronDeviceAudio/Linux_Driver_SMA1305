@@ -1243,7 +1243,7 @@ static int sma1305_i_op2_put(struct snd_kcontrol *kcontrol,
 
 /*0x35[1:0] FDPEC_GAIN */
 static const char * const sma1305_fdpec_gain_text[] = {
-	"RCV_x0.5", "SPK_x2.2", "SPK_x3.0", "SPK_x3.6"};
+	"RCV_x0.5", "RCV_x1.1", "SPK_x3.0", "SPK_x3.6"};
 
 static const struct soc_enum sma1305_fdpec_gain_enum =
 SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(sma1305_fdpec_gain_text),
