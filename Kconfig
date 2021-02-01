@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Helper to resolve issues with configs that have SPI enabled but I2C
+# modular, meaning we can't build the codec driver in with I2C support.
+# We use an ordered list of conditional defaults to pick the appropriate
+# setting - SPI can't be modular so that case doesn't need to be covered.
+
+menu "CODEC drivers"
+
+config SND_SOC_SMA1305
+	tristate "Silicon Mitus SMA1305 Audio Amplifier"
+	depends on I2C
+
+config SMA1305_FACTORY_RECOVERY_SYSFS
+	bool "Factory recovery sysfs"
+
+endmenu

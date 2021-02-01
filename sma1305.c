@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r010, 2021.01.21	- initial version  sma1305
+ * r011, 2021.01.28	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -3721,6 +3721,7 @@ int get_sma_amp_component(struct snd_soc_component **component)
 }
 EXPORT_SYMBOL(get_sma_amp_component);
 
+#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
 int sma1305_reinit(struct snd_soc_component *component)
 {
 	sma1305_reset(component);
@@ -3729,6 +3730,7 @@ int sma1305_reinit(struct snd_soc_component *component)
 	return 0;
 }
 EXPORT_SYMBOL(sma1305_reinit);
+#endif
 
 static ssize_t check_fault_period_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
@@ -3918,7 +3920,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV010\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV011\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

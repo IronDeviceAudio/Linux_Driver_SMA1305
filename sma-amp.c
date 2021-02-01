@@ -27,6 +27,7 @@ struct sma_amp_t {
 
 static struct sma_amp_t *sma_amp;
 
+#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
 static ssize_t reinit_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
 {
@@ -65,9 +66,12 @@ static ssize_t reinit_store(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(reinit);
+#endif
 
 static struct attribute *sma_amp_attr[] = {
+#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
 	&dev_attr_reinit.attr,
+#endif
 	NULL,
 };
 
