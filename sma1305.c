@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r011, 2021.01.28	- initial version  sma1305
+ * r012, 2021.03.16	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -336,7 +336,7 @@ static int power_up_down_control_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->amp_power_status;
+	ucontrol->value.integer.value[0] = (long) sma1305->amp_power_status;
 
 	return 0;
 }
@@ -364,7 +364,7 @@ static int power_down_control_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->force_amp_power_down;
+	ucontrol->value.integer.value[0] = (long) sma1305->force_amp_power_down;
 
 	return 0;
 }
@@ -376,7 +376,7 @@ static int power_down_control_put(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	sma1305->force_amp_power_down = ucontrol->value.integer.value[0];
+	sma1305->force_amp_power_down = (bool) ucontrol->value.integer.value[0];
 
 	if (sma1305->force_amp_power_down) {
 		dev_info(component->dev, "%s\n", "Force AMP Power Down");
@@ -392,7 +392,7 @@ static int force_sdo_bypass_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->sdo_bypass_flag;
+	ucontrol->value.integer.value[0] = (long) sma1305->sdo_bypass_flag;
 
 	return 0;
 }
@@ -425,10 +425,10 @@ static int sma1305_input_format_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_01_INPUT_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x70) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x70) >> 4);
 
 	return 0;
 }
@@ -474,10 +474,10 @@ static int sma1305_port_config_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_09_OUTPUT_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -511,10 +511,10 @@ static int sma1305_sdo_out1_sel_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_09_OUTPUT_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -582,10 +582,10 @@ static int sma1305_set_ocp_h_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0C_BOOST_CTRL8, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -619,10 +619,10 @@ static int sma1305_vol_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -656,10 +656,10 @@ static int sma1305_mute_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -693,10 +693,10 @@ static int sma1305_vbat_lpf_byp_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0F_VBAT_TEMP_SENSING, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -767,10 +767,10 @@ static int sma1305_spkmode_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1C) >> 2);
 
 	return 0;
 }
@@ -808,10 +808,10 @@ static int sma1305_input_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_12_SYSTEM_CTRL3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -844,10 +844,10 @@ static int sma1305_input_r_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_12_SYSTEM_CTRL3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -918,10 +918,10 @@ static int sma1305_spk_hysfb_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_14_MODULATOR, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1034,10 +1034,10 @@ static int sma1305_tone_freq_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1E) >> 1);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1E) >> 1);
 
 	return 0;
 }
@@ -1109,10 +1109,10 @@ static int sma1305_ocp_filter_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_34_OCP_SPK, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x0C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x0C) >> 2);
 
 	return 0;
 }
@@ -1184,10 +1184,10 @@ static int sma1305_i_op1_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1219,10 +1219,10 @@ static int sma1305_i_op2_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1289,10 +1289,10 @@ static int sma1305_lr_delay_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_36_PROTECTION, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -1372,10 +1372,10 @@ static int sma1305_pmt_update_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_38_POWER_METER, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1499,10 +1499,10 @@ static int sma1305_flt_vdd_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xF0) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xF0) >> 4);
 
 	return 0;
 }
@@ -1536,10 +1536,10 @@ static int sma1305_slope_off_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_94_BOOST_CTRL9, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1571,10 +1571,10 @@ static int sma1305_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_94_BOOST_CTRL9, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1643,10 +1643,10 @@ static int sma1305_set_ocl_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_95_BOOST_CTRL10, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x70) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x70) >> 4);
 
 	return 0;
 }
@@ -1679,10 +1679,10 @@ static int sma1305_set_comp_i_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_95_BOOST_CTRL10, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x0C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x0C) >> 2);
 
 	return 0;
 }
@@ -1840,10 +1840,10 @@ static int sma1305_pll_div_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A2_TOP_MAN1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1877,10 +1877,10 @@ static int sma1305_mon_osc_pll_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A3_TOP_MAN2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1914,10 +1914,10 @@ static int sma1305_interface_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xE0) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xE0) >> 5);
 
 	return 0;
 }
@@ -1949,10 +1949,10 @@ static int sma1305_sck_rate_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x18) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x18) >> 3);
 
 	return 0;
 }
@@ -1984,10 +1984,10 @@ static int sma1305_data_w_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x06) >> 1);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x06) >> 1);
 
 	return 0;
 }
@@ -2020,10 +2020,10 @@ static int sma1305_tdm_slot1_rx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A5_TDM1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -2056,10 +2056,10 @@ static int sma1305_tdm_slot2_rx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A5_TDM1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x07) >> 0);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x07) >> 0);
 
 	return 0;
 }
@@ -2092,10 +2092,10 @@ static int sma1305_tdm_slot1_tx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A6_TDM2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -2128,10 +2128,10 @@ static int sma1305_tdm_slot2_tx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A6_TDM2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x07) >> 0);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x07) >> 0);
 
 	return 0;
 }
@@ -2164,10 +2164,10 @@ static int sma1305_clk_mon_time_sel_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A7_CLK_MON, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -2200,10 +2200,10 @@ static int sma1305_boost_mode_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_AC_BOOST_CTRL5, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -2236,10 +2236,10 @@ static int sma1305_bst_freq_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_AE_BOOST_CTRL7, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1C) >> 2);
 
 	return 0;
 }
@@ -2358,7 +2358,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	sma1305->spk_rcv_mode = ucontrol->value.integer.value[0];
+	sma1305->spk_rcv_mode = (unsigned int) ucontrol->value.integer.value[0];
 
 	sma1305_spk_rcv_conf(component);
 
@@ -2681,8 +2681,7 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	if ((sma1305->spk_rcv_mode < 0) ||
-	(sma1305->spk_rcv_mode > 2))
+	if (sma1305->spk_rcv_mode > 2)
 		return -EINVAL;
 
 	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
@@ -3658,7 +3657,7 @@ static int sma1305_reset(struct snd_soc_component *component)
 		dev_info(component->dev, "SMA1305 OTP Status Fail\n");
 
 	/* Register Initial Value Setting */
-	for (i = 0; i < ARRAY_SIZE(sma1305_reg_def); i++)
+	for (i = 0; i < (unsigned int) ARRAY_SIZE(sma1305_reg_def); i++)
 		regmap_write(sma1305->regmap,
 			sma1305_reg_def[i].reg, sma1305_reg_def[i].def);
 	if (sma1305->rev_num == REV_NUM_REV0) {
@@ -3920,7 +3919,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV011\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV012\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -3946,9 +3945,9 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 
 	if (np) {
 		if (!of_property_read_u32(np, "init-vol", &value)) {
+			sma1305->init_vol = value;
 			dev_info(&client->dev,
 				"init_vol is 0x%x from DT\n", value);
-			sma1305->init_vol = value;
 		} else {
 			dev_info(&client->dev,
 				"init_vol is set with 0x32(-1.0dB)\n");
@@ -4162,7 +4161,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->check_fault_status = true;
 	sma1305->isr_manual_mode = true;
 
-	sma1305->devtype = id->driver_data;
+	sma1305->devtype = (enum sma1305_type) id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
 
@@ -4252,15 +4251,15 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 
 	dev_info(&client->dev, "%s\n", __func__);
 
-	cancel_delayed_work_sync(&sma1305->check_fault_work);
+	if (sma1305 != NULL) {
+		cancel_delayed_work_sync(&sma1305->check_fault_work);
+		snd_soc_unregister_component(&client->dev);
 
-	snd_soc_unregister_component(&client->dev);
+		if (sma1305->irq < 0)
+			devm_free_irq(&client->dev, sma1305->irq, sma1305);
 
-	if (sma1305->irq < 0)
-		devm_free_irq(&client->dev, sma1305->irq, sma1305);
-
-	if (sma1305)
 		devm_kfree(&client->dev, sma1305);
+	}
 
 	return 0;
 }

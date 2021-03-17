@@ -117,6 +117,7 @@ static int sma_amp_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"failed to create sysfs group [%d]\n", ret);
 		kfree(sma_amp);
+		return ret;
 	}
 
 	mutex_init(&sma_amp->lock);
