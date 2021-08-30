@@ -17,7 +17,8 @@ REV005: PLL match table for 44.1KHz sample rate
 REV006: PLL configuration optimization for idle noise
 		Mixer interface string change
 
-# SMA1305 Stereo Mixer Path Setting Guide - LEFT and RIGHT are replaced with temporary prefix values
+SMA1305 Stereo Mixer Path Setting Guide - LEFT and RIGHT are replaced with temporary prefix values
+
 <!-- SMA1305 Stereo Playback -->
 <!-- LEFT SMA1305 -->
 <ctl name="LEFT Port In/Out port config" value="OUT_Port" />
