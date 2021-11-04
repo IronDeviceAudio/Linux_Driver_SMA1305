@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r006, 2020.12.23	- initial version  sma1305
+ * r007, 2021.11.04	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -30,6 +30,10 @@
 #include <asm/div64.h>
 #include <linux/interrupt.h>
 #include <linux/of_gpio.h>
+#ifdef CONFIG_SND_SOC_APS_ALGO
+#include <linux/power_supply.h>
+#include <sound/ff_prot_spk.h>
+#endif
 
 #include "sma1305.h"
 
@@ -87,9 +91,14 @@ struct sma1305_priv {
 	bool impossible_bst_ctrl;
 	long isr_manual_mode;
 	struct mutex lock;
+	struct mutex routing_lock;
 	struct delayed_work check_fault_work;
 	long check_fault_period;
 	long check_fault_status;
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	struct delayed_work check_amb_temp_work;
+	long check_amb_temp_period;
+#endif
 	unsigned int format;
 	struct device *dev;
 	unsigned int rev_num;
@@ -2789,6 +2798,39 @@ SOC_ENUM_EXT("Speaker/Receiver Mode",
 	speaker_receiver_mode_get, speaker_receiver_mode_put),
 };
 
+#ifdef CONFIG_SND_SOC_APS_ALGO
+static int sma1305_get_amb_temp(void)
+{
+	struct power_supply *psy;
+	int ret = 0;
+	union power_supply_propval value = {0};
+
+	psy = power_supply_get_by_name("battery");
+
+	if (!psy) {
+		pr_err("%s: Fail to get psy (%s)\n",
+				__func__, "battery");
+		value.intval = 0;
+		ret = -ENOENT;
+	} else {
+		if (psy->desc->get_property != NULL) {
+			ret = psy->desc->get_property(psy,
+			 (enum power_supply_property)
+			 POWER_SUPPLY_PROP_TEMP, &value);
+			if (ret < 0) {
+				pr_err("%s: Fail to %s get POWER_SUPPLY_PROP_TEMP (%d)\n",
+						__func__, "battery", ret);
+				value.intval = 0;
+			}
+		} else {
+			ret = -EINVAL;
+		}
+		power_supply_put(psy);
+	}
+
+	return DIV_ROUND_CLOSEST(value.intval, 10);
+}
+#endif
 
 static int sma1305_startup(struct snd_soc_component *component)
 {
@@ -2801,6 +2843,11 @@ static int sma1305_startup(struct snd_soc_component *component)
 	}
 
 	dev_info(component->dev, "%s\n", __func__);
+
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	queue_delayed_work(system_freezable_wq,
+		&sma1305->check_amb_temp_work, 0);
+#endif
 
 	regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
 			PLL_MASK, PLL_ON);
@@ -2871,6 +2918,10 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 			SEL_INT_MASK, INT_CLEAR_AUTO);
 	regmap_update_bits(sma1305->regmap, SMA1305_93_INT_CTRL,
 			DIS_INT_MASK, HIGH_Z_INT);
+
+#ifdef CCONFIG_SND_SOC_APS_ALGO
+	cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+#endif
 
 	return 0;
 }
@@ -3570,8 +3621,66 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	}
 
 	mutex_unlock(&sma1305->lock);
-
 }
+
+#ifdef CONFIG_SND_SOC_APS_ALGO
+static int afe_ff_prot_get_set(int *user_data, uint32_t param_id,
+		uint8_t get_set, uint32_t length)
+{
+	int ret = 0;
+	struct ff_prot_spk_data resp_data;
+
+	switch (get_set) {
+	case SMA_SET_PARAM:
+		ret = ff_prot_spk_write((void *)user_data, param_id, length);
+		break;
+	case SMA_GET_PARAM:
+		memset(&resp_data, 0, sizeof(resp_data));
+
+		ret = ff_prot_spk_read((void *)&resp_data, param_id, length);
+
+		memcpy(user_data, resp_data.payload, length);
+		break;
+	}
+
+	return ret;
+}
+
+/* Wrapper around set/get parameter,
+ * all set/get commands pass through this Wrapper
+ */
+int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
+		uint8_t get_set, uint32_t length)
+{
+	int ret = 0;
+
+	ret = afe_ff_prot_get_set(user_data, param_id, get_set, length);
+
+	return ret;
+}
+
+static void sma1305_check_amb_temp_worker(struct work_struct *work)
+{
+	struct sma1305_priv *sma1305 =
+		container_of(work, struct sma1305_priv,
+		check_amb_temp_work.work);
+	int ret;
+	int data = 0;
+
+	mutex_lock(&sma1305->routing_lock);
+
+//	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
+//			__func__, sma1305_get_amb_temp());
+	data = sma1305_get_amb_temp();
+	ret = afe_ff_prot_algo_ctrl(&data, 0, SMA_SET_PARAM, sizeof(int));
+
+	queue_delayed_work(system_freezable_wq,
+		&sma1305->check_amb_temp_work,
+			sma1305->check_amb_temp_period * HZ);
+
+	mutex_unlock(&sma1305->routing_lock);
+}
+#endif
 
 #ifdef CONFIG_PM
 static int sma1305_suspend(struct snd_soc_component *component)
@@ -3827,6 +3936,10 @@ static void sma1305_remove(struct snd_soc_component *component)
 	dev_info(component->dev, "%s\n", __func__);
 
 	cancel_delayed_work_sync(&sma1305->check_fault_work);
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+#endif
+
 	sma1305_set_bias_level(component, SND_SOC_BIAS_OFF);
 }
 
@@ -3866,7 +3979,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV006\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV007\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4105,6 +4218,13 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->check_fault_status = true;
 	sma1305->isr_manual_mode = false;
 
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	mutex_init(&sma1305->routing_lock);
+	INIT_DELAYED_WORK(&sma1305->check_amb_temp_work,
+		sma1305_check_amb_temp_worker);
+	sma1305->check_amb_temp_period = CHECK_PERIOD_TIME * 10;
+#endif
+
 	sma1305->devtype = id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
@@ -4196,6 +4316,9 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 	dev_info(&client->dev, "%s\n", __func__);
 
 	cancel_delayed_work_sync(&sma1305->check_fault_work);
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+#endif
 
 	snd_soc_unregister_component(&client->dev);
 
