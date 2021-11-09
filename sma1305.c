@@ -2846,7 +2846,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 
 #ifdef CONFIG_SND_SOC_APS_ALGO
 	queue_delayed_work(system_freezable_wq,
-		&sma1305->check_amb_temp_work, msecs_to_jiffies(40));
+		&sma1305->check_amb_temp_work, msecs_to_jiffies(70));
 #endif
 
 	regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
@@ -3667,18 +3667,20 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	int ret;
 	int data = 0;
 
-	mutex_lock(&sma1305->routing_lock);
-
+	if (sma1305->amp_power_status) {
+		mutex_lock(&sma1305->routing_lock);
 //	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
 //			__func__, sma1305_get_amb_temp());
-	data = sma1305_get_amb_temp();
-	ret = afe_ff_prot_algo_ctrl(&data, 0, SMA_SET_PARAM, sizeof(int));
+		data = sma1305_get_amb_temp();
 
-	queue_delayed_work(system_freezable_wq,
-		&sma1305->check_amb_temp_work,
-			sma1305->check_amb_temp_period * HZ);
+		ret = afe_ff_prot_algo_ctrl(&data, 0, SMA_SET_PARAM, sizeof(int));
 
-	mutex_unlock(&sma1305->routing_lock);
+		queue_delayed_work(system_freezable_wq,
+			&sma1305->check_amb_temp_work,
+				sma1305->check_amb_temp_period * HZ);
+
+		mutex_unlock(&sma1305->routing_lock);
+	}
 }
 #endif
 
