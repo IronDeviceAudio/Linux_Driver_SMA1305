@@ -20,6 +20,9 @@ REV006: PLL configuration optimization for idle noise
 REV007: Added Read/Write interface between Kernel and
 		ABOX(Exynos Audio DSP) using ERAP IPC communication
 
+REV008: 1) Fixed to comply with Inclusive language rules
+        2) Fixed work queue delay to improve ABOX and ERAP sync issues
+
 ### SMA1305 Stereo Mixer Path Setting Guide
 LEFT and RIGHT are replaced with temporary prefix values
 
