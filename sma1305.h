@@ -1,7 +1,7 @@
 /*
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r007, 2021.11.04
+ * r008, 2021.11.09
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -209,10 +209,10 @@
 #define RJ_20BIT			(6<<4)
 #define RJ_24BIT			(7<<4)
 
-/* Master / Slave Setting */
-#define MASTER_SLAVE_MASK	(1<<7)
-#define SLAVE_MODE			(0<<7)
-#define MASTER_MODE			(1<<7)
+/* Controller / Device Setting */
+#define CONTROLLER_DEVICE_MASK	(1<<7)
+#define DEVICE_MODE			(0<<7)
+#define CONTROLLER_MODE			(1<<7)
 
 /* Port Config */
 #define PORT_CONFIG_MASK	(3<<6)

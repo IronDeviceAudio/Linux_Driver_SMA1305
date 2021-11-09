@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r007, 2021.11.04	- initial version  sma1305
+ * r008, 2021.11.09	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -2846,7 +2846,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 
 #ifdef CONFIG_SND_SOC_APS_ALGO
 	queue_delayed_work(system_freezable_wq,
-		&sma1305->check_amb_temp_work, 0);
+		&sma1305->check_amb_temp_work, msecs_to_jiffies(40));
 #endif
 
 	regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
@@ -3367,24 +3367,24 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 
 	case SND_SOC_DAIFMT_CBS_CFS:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "I2S/TDM Slave mode");
-		/* I2S/PCM clock mode - slave mode */
+			"%s : %s\n", __func__, "I2S/TDM Device mode");
+		/* I2S/PCM clock mode - Device mode */
 		regmap_update_bits(sma1305->regmap, SMA1305_01_INPUT_CTRL1,
-					MASTER_SLAVE_MASK, SLAVE_MODE);
+					CONTROLLER_DEVICE_MASK, DEVICE_MODE);
 
 		break;
 
 	case SND_SOC_DAIFMT_CBM_CFM:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "I2S/TDM Master mode");
-		/* I2S/PCM clock mode - master mode */
+			"%s : %s\n", __func__, "I2S/TDM Controller mode");
+		/* I2S/PCM clock mode - Controller mode */
 		regmap_update_bits(sma1305->regmap, SMA1305_01_INPUT_CTRL1,
-					MASTER_SLAVE_MASK, MASTER_MODE);
+				CONTROLLER_DEVICE_MASK, CONTROLLER_MODE);
 		break;
 
 	default:
 		dev_err(component->dev,
-				"Unsupported Master/Slave : 0x%x\n", fmt);
+				"Unsupported Controller/Device : 0x%x\n", fmt);
 		return -EINVAL;
 	}
 
@@ -3979,7 +3979,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV007\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV008\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
