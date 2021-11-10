@@ -23,6 +23,9 @@ REV007: Added Read/Write interface between Kernel and
 REV008: 1) Fixed to comply with Inclusive language rules.
         2) Fixed work queue delay to improve ABOX and ERAP sync issues.
 
+REV009: 1) Added changeable sysfs value for dsp prepare time.
+        2) Fixed a bug that workqueue worked continuously.
+
 ### SMA1305 Stereo Mixer Path Setting Guide
 LEFT and RIGHT are replaced with temporary prefix values
 
