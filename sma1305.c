@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r008, 2021.11.09	- initial version  sma1305
+ * r009, 2021.11.10	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -97,6 +97,7 @@ struct sma1305_priv {
 	long check_fault_status;
 #ifdef CONFIG_SND_SOC_APS_ALGO
 	struct delayed_work check_amb_temp_work;
+	long dsp_prepare_time;
 	long check_amb_temp_period;
 #endif
 	unsigned int format;
@@ -2845,8 +2846,10 @@ static int sma1305_startup(struct snd_soc_component *component)
 	dev_info(component->dev, "%s\n", __func__);
 
 #ifdef CONFIG_SND_SOC_APS_ALGO
+	cancel_delayed_work(&sma1305->check_amb_temp_work);
 	queue_delayed_work(system_freezable_wq,
-		&sma1305->check_amb_temp_work, msecs_to_jiffies(70));
+		&sma1305->check_amb_temp_work,
+		msecs_to_jiffies(sma1305->dsp_prepare_time));
 #endif
 
 	regmap_update_bits(sma1305->regmap, SMA1305_A2_TOP_MAN1,
@@ -2920,7 +2923,7 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 			DIS_INT_MASK, HIGH_Z_INT);
 
 #ifdef CCONFIG_SND_SOC_APS_ALGO
-	cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+	cancel_delayed_work(&sma1305->check_amb_temp_work);
 #endif
 
 	return 0;
@@ -3673,7 +3676,8 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 //			__func__, sma1305_get_amb_temp());
 		data = sma1305_get_amb_temp();
 
-		ret = afe_ff_prot_algo_ctrl(&data, 0, SMA_SET_PARAM, sizeof(int));
+		ret = afe_ff_prot_algo_ctrl(&data, 0,
+					SMA_SET_PARAM, sizeof(int));
 
 		queue_delayed_work(system_freezable_wq,
 			&sma1305->check_amb_temp_work,
@@ -3790,6 +3794,36 @@ static int sma1305_reset(struct snd_soc_component *component)
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_APS_ALGO
+static ssize_t dsp_prepare_time_show(struct device *dev,
+	struct device_attribute *devattr, char *buf)
+{
+	struct sma1305_priv *sma1305 = dev_get_drvdata(dev);
+	int rc;
+
+	rc = (int)snprintf(buf, PAGE_SIZE,
+			"%ld\n", sma1305->dsp_prepare_time);
+
+	return (ssize_t)rc;
+}
+
+static ssize_t dsp_prepare_time_store(struct device *dev,
+	struct device_attribute *devattr, const char *buf, size_t count)
+{
+	struct sma1305_priv *sma1305 = dev_get_drvdata(dev);
+	int ret;
+
+	ret = kstrtol(buf, 10, &sma1305->dsp_prepare_time);
+
+	if (ret)
+		return -EINVAL;
+
+	return (ssize_t)count;
+}
+
+static DEVICE_ATTR_RW(dsp_prepare_time);
+#endif
+
 static ssize_t check_fault_period_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
 {
@@ -3875,6 +3909,9 @@ static ssize_t isr_manual_mode_store(struct device *dev,
 static DEVICE_ATTR_RW(isr_manual_mode);
 
 static struct attribute *sma1305_attr[] = {
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	&dev_attr_dsp_prepare_time.attr,
+#endif
 	&dev_attr_check_fault_period.attr,
 	&dev_attr_check_fault_status.attr,
 	&dev_attr_isr_manual_mode.attr,
@@ -3981,7 +4018,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV008\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV009\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4224,6 +4261,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	mutex_init(&sma1305->routing_lock);
 	INIT_DELAYED_WORK(&sma1305->check_amb_temp_work,
 		sma1305_check_amb_temp_worker);
+	sma1305->dsp_prepare_time = 50;
 	sma1305->check_amb_temp_period = CHECK_PERIOD_TIME * 10;
 #endif
 
