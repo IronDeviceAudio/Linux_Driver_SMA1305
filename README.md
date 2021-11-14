@@ -28,6 +28,8 @@ REV009: 1) Added changeable sysfs value for dsp prepare time.
 
 REV010: Improved low temperature environment test issues
 
+REV011: Change the dsp prepare time tuning value based on eyxnos(Nacho) ABOX
+
 ### SMA1305 Stereo Mixer Path Setting Guide
 LEFT and RIGHT are replaced with temporary prefix values
 
