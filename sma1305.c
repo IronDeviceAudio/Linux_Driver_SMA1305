@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r011, 2021.11.14	- initial version  sma1305
+ * r012, 2021.11.25	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -38,6 +38,8 @@
 #include "sma1305.h"
 
 #define CHECK_PERIOD_TIME 1 /* sec per HZ */
+#define GAIN_CONT_5_MIN 30
+#define GAIN_CONT_1_MIN 6
 
 #define PLL_MATCH(_input_clk_name, _output_clk_name, _input_clk,\
 		_post_n, _n, _vco,  _p_cp)\
@@ -115,6 +117,9 @@ struct sma1305_priv {
 	unsigned int sdo0_sel;
 	unsigned int sdo1_sel;
 	atomic_t irq_enabled;
+	bool low_temp_fix_gain;
+	int8_t low_temp_max_atten;
+	unsigned int fix_gain_count;
 	const uint32_t *temp_gain_array;
 	uint32_t temp_gain_array_len;
 };
@@ -3550,9 +3555,6 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	if (sma1305->tsdw_cnt)
 		ret = regmap_read(sma1305->regmap,
 			SMA1305_0A_SPK_VOL, &sma1305->cur_vol);
-	else
-		ret = regmap_read(sma1305->regmap,
-			SMA1305_0A_SPK_VOL, &sma1305->init_vol);
 
 	if (ret != 0) {
 		dev_err(sma1305->dev,
@@ -3691,23 +3693,72 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 				gain = be32_to_cpu(reg_val->gain_atten);
 				active = be32_to_cpu(reg_val->activate);
 
-				gain = gain + (sma1305->init_vol - 0x30);
+				gain = gain + 2;
 
 				if ((limit >= data) &&
 					active && (gain >= sma1305->init_vol)) {
-					dev_dbg(sma1305->dev, "%s : SPK_VOL 0x%02x[dB]\n",
-								__func__, gain);
+					sma1305->low_temp_fix_gain = true;
+					sma1305->low_temp_max_atten = gain;
+					dev_info(sma1305->dev,
+						"%s : SPK_VOL 0x%02x[dB]\n",
+						__func__, gain);
 					regmap_write(sma1305->regmap,
 						SMA1305_0A_SPK_VOL, gain);
 					break;
 				}
-				if (limit < data && cnt == (tmp_gn_len - 3)) {
-					dev_dbg(sma1305->dev, "%s : SPK_VOL Init 0x%02x[dB]\n",
-						__func__, sma1305->cur_vol);
+
+				if (sma1305->low_temp_fix_gain == true &&
+						sma1305->fix_gain_count <
+						GAIN_CONT_5_MIN &&
+						data >= -10 && active) {
+					sma1305->fix_gain_count++;
+				} else if (sma1305->fix_gain_count >=
+						GAIN_CONT_5_MIN &&
+					   sma1305->fix_gain_count <
+					       (GAIN_CONT_5_MIN +
+						GAIN_CONT_1_MIN *
+					   (((sma1305->low_temp_max_atten
+					    - sma1305->init_vol) >> 1) - 1))
+					     &&	active) {
+					if (sma1305->fix_gain_count %
+						GAIN_CONT_1_MIN == 0) {
+						regmap_read(sma1305->regmap,
+						SMA1305_0A_SPK_VOL,
+						&sma1305->cur_vol);
+						dev_info(sma1305->dev,
+						"%s : SPK_VOL 0x%02x[dB]\n",
+						__func__,
+						sma1305->cur_vol - 2);
+						regmap_write(sma1305->regmap,
+							SMA1305_0A_SPK_VOL,
+							sma1305->cur_vol - 2);
+					}
+					sma1305->fix_gain_count++;
+				} else if (sma1305->fix_gain_count >=
+					       (GAIN_CONT_5_MIN +
+						GAIN_CONT_1_MIN *
+					   (((sma1305->low_temp_max_atten
+					    - sma1305->init_vol) >> 1) - 1))
+					     &&	active) {
+					dev_info(sma1305->dev,
+					"%s : SPK_VOL 0x%02x[dB]\n",
+					__func__, sma1305->init_vol);
 					regmap_write(sma1305->regmap,
-					SMA1305_0A_SPK_VOL, sma1305->cur_vol);
-					break;
+					SMA1305_0A_SPK_VOL, sma1305->init_vol);
+					sma1305->low_temp_fix_gain = false;
+					sma1305->fix_gain_count = 0;
 				}
+
+				/* if (limit < data && cnt ==
+				 *	(tmp_gn_len - 3)) {
+				 *	dev_dbg(sma1305->dev,
+				 *	"%s : SPK_VOL Init 0x%02x[dB]\n",
+				 *	__func__, sma1305->cur_vol);
+				 *	regmap_write(sma1305->regmap,
+				 *	SMA1305_0A_SPK_VOL, sma1305->cur_vol);
+				 *	break;
+				}*
+				 */
 			}
 		}
 //	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
@@ -4077,7 +4128,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV011\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV012\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4326,6 +4377,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		sma1305_check_amb_temp_worker);
 	sma1305->dsp_prepare_time = 30;
 	sma1305->check_amb_temp_period = CHECK_PERIOD_TIME * 10;
+	sma1305->low_temp_fix_gain = false;
+	sma1305->fix_gain_count = 0;
 	sma1305->check_amb_temp_status = true;
 
 	sma1305->devtype = id->driver_data;
