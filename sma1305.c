@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r012, 2021.11.25	- initial version  sma1305
+ * r013, 2021.12.01	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -2840,7 +2840,7 @@ static int sma1305_get_amb_temp(void)
 		power_supply_put(psy);
 	}
 
-	return DIV_ROUND_CLOSEST(value.intval, 10);
+	return value.intval;
 }
 
 static int sma1305_startup(struct snd_soc_component *component)
@@ -3677,12 +3677,13 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	struct sma1305_temp_gain_match *reg_val;
 	unsigned int cnt = 0;
 	int data = 0;
+	int data_dec = sma1305_get_amb_temp();
 	int8_t limit, gain, active;
 
 	if (sma1305->amp_power_status) {
 
 		mutex_lock(&sma1305->routing_lock);
-		data = sma1305_get_amb_temp();
+		data = DIV_ROUND_CLOSEST(data_dec, 10);
 
 		if (sma1305->temp_gain_array != NULL) {
 			for (cnt = 0; cnt < tmp_gn_len; cnt += 3) {
@@ -3764,7 +3765,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 //	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
 //			__func__, sma1305_get_amb_temp());
 #ifdef CONFIG_SND_SOC_APS_ALGO
-		afe_ff_prot_algo_ctrl(&data, 0,
+		afe_ff_prot_algo_ctrl(&data_dec, 0,
 					SMA_SET_PARAM, sizeof(int));
 #endif
 		queue_delayed_work(system_freezable_wq,
@@ -4128,7 +4129,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV012\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV013\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

@@ -32,6 +32,8 @@ REV011: Change the dsp prepare time tuning value based on eyxnos(Nacho) ABOX
 
 REV012: Improved low temperature environment test issues (Ver 2)
 
+REV013: Separate the ambient temperature transfer data to one decimal place
+
 ### SMA1305 Stereo Mixer Path Setting Guide
 LEFT and RIGHT are replaced with temporary prefix values
 
