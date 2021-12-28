@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r013, 2021.12.01	- initial version  sma1305
+ * r014, 2021.12.28	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -111,6 +111,7 @@ struct sma1305_priv {
 	struct device *dev;
 	unsigned int rev_num;
 	unsigned int last_bclk;
+	unsigned int frame_size;
 	int irq;
 	int gpio_int;
 	unsigned int sdo_ch;
@@ -136,8 +137,11 @@ PLL_MATCH("19.2MHz",   "24.48MHz", 19200000, 0x06, 0x7B, 0x88, 0x0C),
 PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
 };
 
+static struct snd_soc_component *sma1305_amp_component;
+
 static int sma1305_startup(struct snd_soc_component *);
 static int sma1305_shutdown(struct snd_soc_component *);
+static int sma1305_spk_rcv_conf(struct snd_soc_component *);
 
 /* Initial register value - 4W SPK 2020.09.25 */
 static const struct reg_default sma1305_reg_def[] = {
@@ -342,7 +346,7 @@ static int power_up_down_control_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->amp_power_status;
+	ucontrol->value.integer.value[0] = (long) sma1305->amp_power_status;
 
 	return 0;
 }
@@ -370,7 +374,7 @@ static int power_down_control_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->force_amp_power_down;
+	ucontrol->value.integer.value[0] = (long) sma1305->force_amp_power_down;
 
 	return 0;
 }
@@ -382,7 +386,7 @@ static int power_down_control_put(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	sma1305->force_amp_power_down = ucontrol->value.integer.value[0];
+	sma1305->force_amp_power_down = (bool) ucontrol->value.integer.value[0];
 
 	if (sma1305->force_amp_power_down) {
 		dev_info(component->dev, "%s\n", "Force AMP Power Down");
@@ -398,7 +402,7 @@ static int force_sdo_bypass_get(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = sma1305->sdo_bypass_flag;
+	ucontrol->value.integer.value[0] = (long) sma1305->sdo_bypass_flag;
 
 	return 0;
 }
@@ -431,10 +435,10 @@ static int sma1305_input_format_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_01_INPUT_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x70) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x70) >> 4);
 
 	return 0;
 }
@@ -480,10 +484,10 @@ static int sma1305_port_config_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_09_OUTPUT_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -517,10 +521,10 @@ static int sma1305_sdo_out1_sel_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_09_OUTPUT_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -588,10 +592,10 @@ static int sma1305_set_ocp_h_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0C_BOOST_CTRL8, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -625,10 +629,10 @@ static int sma1305_vol_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -662,10 +666,10 @@ static int sma1305_mute_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -699,10 +703,10 @@ static int sma1305_vbat_lpf_byp_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_0F_VBAT_TEMP_SENSING, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -773,10 +777,10 @@ static int sma1305_spkmode_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1C) >> 2);
 
 	return 0;
 }
@@ -814,10 +818,10 @@ static int sma1305_input_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_12_SYSTEM_CTRL3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -850,10 +854,10 @@ static int sma1305_input_r_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_12_SYSTEM_CTRL3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -924,10 +928,10 @@ static int sma1305_spk_hysfb_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_14_MODULATOR, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1040,10 +1044,10 @@ static int sma1305_tone_freq_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1E) >> 1);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1E) >> 1);
 
 	return 0;
 }
@@ -1115,10 +1119,10 @@ static int sma1305_ocp_filter_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_34_OCP_SPK, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x0C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x0C) >> 2);
 
 	return 0;
 }
@@ -1190,10 +1194,10 @@ static int sma1305_i_op1_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1225,10 +1229,10 @@ static int sma1305_i_op2_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1249,7 +1253,7 @@ static int sma1305_i_op2_put(struct snd_kcontrol *kcontrol,
 
 /*0x35[1:0] FDPEC_GAIN */
 static const char * const sma1305_fdpec_gain_text[] = {
-	"RCV_x0.5", "SPK_x2.2", "SPK_x3.0", "SPK_x3.6"};
+	"RCV_x0.5", "RCV_x1.1", "SPK_x3.0", "SPK_x3.6"};
 
 static const struct soc_enum sma1305_fdpec_gain_enum =
 SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(sma1305_fdpec_gain_text),
@@ -1295,10 +1299,10 @@ static int sma1305_lr_delay_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_36_PROTECTION, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -1378,10 +1382,10 @@ static int sma1305_pmt_update_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_38_POWER_METER, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1505,10 +1509,10 @@ static int sma1305_flt_vdd_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xF0) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xF0) >> 4);
 
 	return 0;
 }
@@ -1542,10 +1546,10 @@ static int sma1305_slope_off_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_94_BOOST_CTRL9, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1577,10 +1581,10 @@ static int sma1305_slope_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_94_BOOST_CTRL9, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1649,10 +1653,10 @@ static int sma1305_set_ocl_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_95_BOOST_CTRL10, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x70) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x70) >> 4);
 
 	return 0;
 }
@@ -1685,10 +1689,10 @@ static int sma1305_set_comp_i_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_95_BOOST_CTRL10, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x0C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x0C) >> 2);
 
 	return 0;
 }
@@ -1846,10 +1850,10 @@ static int sma1305_pll_div_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A2_TOP_MAN1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x30) >> 4);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x30) >> 4);
 
 	return 0;
 }
@@ -1883,10 +1887,10 @@ static int sma1305_mon_osc_pll_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A3_TOP_MAN2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -1920,10 +1924,10 @@ static int sma1305_interface_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xE0) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xE0) >> 5);
 
 	return 0;
 }
@@ -1955,10 +1959,10 @@ static int sma1305_sck_rate_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x18) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x18) >> 3);
 
 	return 0;
 }
@@ -1990,10 +1994,10 @@ static int sma1305_data_w_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A4_TOP_MAN3, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x06) >> 1);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x06) >> 1);
 
 	return 0;
 }
@@ -2026,10 +2030,10 @@ static int sma1305_tdm_slot1_rx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A5_TDM1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -2062,10 +2066,10 @@ static int sma1305_tdm_slot2_rx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A5_TDM1, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x07) >> 0);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x07) >> 0);
 
 	return 0;
 }
@@ -2098,10 +2102,10 @@ static int sma1305_tdm_slot1_tx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A6_TDM2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x38) >> 3);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x38) >> 3);
 
 	return 0;
 }
@@ -2134,10 +2138,10 @@ static int sma1305_tdm_slot2_tx_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A6_TDM2, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x07) >> 0);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x07) >> 0);
 
 	return 0;
 }
@@ -2170,10 +2174,10 @@ static int sma1305_clk_mon_time_sel_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_A7_CLK_MON, &val);
-	ucontrol->value.integer.value[0] = ((val & 0xC0) >> 6);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0xC0) >> 6);
 
 	return 0;
 }
@@ -2206,10 +2210,10 @@ static int sma1305_boost_mode_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_AC_BOOST_CTRL5, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x60) >> 5);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x60) >> 5);
 
 	return 0;
 }
@@ -2242,10 +2246,10 @@ static int sma1305_bst_freq_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-	int val;
+	unsigned int val;
 
 	regmap_read(sma1305->regmap, SMA1305_AE_BOOST_CTRL7, &val);
-	ucontrol->value.integer.value[0] = ((val & 0x1C) >> 2);
+	ucontrol->value.integer.value[0] = (long) (((long) val & 0x1C) >> 2);
 
 	return 0;
 }
@@ -2364,138 +2368,10 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	sma1305->spk_rcv_mode = ucontrol->value.integer.value[0];
+	sma1305->spk_rcv_mode = (unsigned int) ucontrol->value.integer.value[0];
 
-	if ((sma1305->spk_rcv_mode < 0) ||
-	(sma1305->spk_rcv_mode > 2))
-		return -EINVAL;
+	sma1305_spk_rcv_conf(component);
 
-	switch (sma1305->spk_rcv_mode) {
-	case SMA1305_RECEIVER_0P1W_MODE:
-		/* SPK Volume : -1.0dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
-		/* Shoot Through Protection : Enable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
-		/* VBAT & Temperature Sensing Off, LPF Bypass */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
-		/* Delay Off */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
-		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
-		/* Tone Generator(Volume - Off) & Fine volume Bypass */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
-		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
-		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, High R(64kohm), RCVx0.5 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x40);
-		/* ENV_TRA, BOP_CTRL Enable */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
-		/* OTA GM : 10uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
-		/* FLT_VDD_GAIN : 3.15V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
-		 * Ramp Compensation : 4.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
-		/* High P-gain, OCL : 5.1A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
-		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
-		/* Min V : 5'b00101 (0.53V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
-		/* HEAD_ROOM : 5'b00111 (0.747V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
-		/* Boost Max : 5'b10100 (8.53V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
-		/* Release Time : 88.54us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
-		break;
-	case SMA1305_RECEIVER_0P5W_MODE:
-		/* SPK Volume : -1.5dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x33);
-		/* Shoot Through Protection : Enable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
-		/* VBAT & Temperature Sensing Off, LPF Bypass */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
-		/* Delay Off */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
-		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
-		/* Tone Generator(Volume - Off) & Fine volume Bypass */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
-		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
-		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, Low R(10kohm), RCVx1.1 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x45);
-		/* ENV_TRA, BOP_CTRL power down */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
-		/* OTA GM : 10uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
-		/* FLT_VDD_GAIN : 3.20V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xC0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
-		 * Ramp Compensation : 4.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
-		/* High P-gain, OCL : 5.1A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
-		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
-		/* Min V : 5'b00101 (0.53V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
-		/* HEAD_ROOM : 5'b00111 (0.747V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
-		/* Boost Max : 5'b10100 (8.53V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
-		/* Release Time : 88.54us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
-		break;
-	case SMA1305_SPEAKER_MODE:
-	default:
-		/* SPK Volume : -1.0dB */
-		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
-		/* Shoot Through Protection : Disable */
-		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0x50);
-		/* VBAT & Temperature Sensing On, LPF Activate */
-		regmap_write(sma1305->regmap,
-				SMA1305_0F_VBAT_TEMP_SENSING, 0x08);
-		/* Delay On - 200us */
-		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x09);
-		/* HYSFB : 625kHz, BDELAY : 6'b010010 */
-		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x12);
-		/* Tone Generator(Volume - Off) & Fine volume Activate */
-		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xA1);
-		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
-		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x7A);
-		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
-		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x16);
-		/* ENV_TRA, BOP_CTRL Enable */
-		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
-		/* OTA GM : 20uA/V */
-		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x02);
-		/* FLT_VDD_GAIN : 3.15V */
-		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
-		 * Ramp Compensation : 7.0A/us
-		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0xA4);
-		/* High P-gain, OCL : 4.0A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x54);
-		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
-		/* Min V : 5'b00101 (0.59V) */
-		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x04);
-		/* HEAD_ROOM : 5'b01000 (1.327V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x29);
-		/* Boost Max : 5'b10001 (10.03V) */
-		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x11);
-		/* Release Time : 83.33us */
-		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
-		break;
-	}
 	return 0;
 }
 
@@ -2843,6 +2719,146 @@ static int sma1305_get_amb_temp(void)
 	return value.intval;
 }
 
+static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
+{
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	if (sma1305->spk_rcv_mode > 2)
+		return -EINVAL;
+
+	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
+			speaker_receiver_mode_text[sma1305->spk_rcv_mode]);
+
+	switch (sma1305->spk_rcv_mode) {
+	case SMA1305_RECEIVER_0P1W_MODE:
+		/* SPK Volume : -1.0dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
+		/* Shoot Through Protection : Enable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
+		/* VBAT & Temperature Sensing Off, LPF Bypass */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
+		/* Delay Off */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
+		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
+		/* Tone Generator(Volume - Off) & Fine volume Bypass */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
+		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
+		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, High R(64kohm), RCVx0.5 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x40);
+		/* ENV_TRA, BOP_CTRL Enable */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
+		/* OTA GM : 10uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
+		/* FLT_VDD_GAIN : 3.15V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
+		 * Ramp Compensation : 4.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
+		/* High P-gain, OCL : 5.1A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
+		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
+		/* Min V : 5'b00101 (0.53V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
+		/* HEAD_ROOM : 5'b00111 (0.747V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
+		/* Boost Max : 5'b10100 (8.53V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
+		/* Release Time : 88.54us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
+		break;
+	case SMA1305_RECEIVER_0P5W_MODE:
+		/* SPK Volume : -1.5dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x33);
+		/* Shoot Through Protection : Enable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0xD0);
+		/* VBAT & Temperature Sensing Off, LPF Bypass */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0xE8);
+		/* Delay Off */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x19);
+		/* HYSFB : 414kHz, BDELAY : 6'b011100 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x5C);
+		/* Tone Generator(Volume - Off) & Fine volume Bypass */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xE1);
+		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x04);
+		/* OP1 : 40uA(LOW_PWR), OP2 : 30uA, Low R(10kohm), RCVx1.1 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x45);
+		/* ENV_TRA, BOP_CTRL power down */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x07);
+		/* OTA GM : 10uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x00);
+		/* FLT_VDD_GAIN : 3.20V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xC0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 4.8ns,
+		 * Ramp Compensation : 4.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x91);
+		/* High P-gain, OCL : 5.1A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
+		/* Driver On Deadtime : 2.1ns, Driver Off Deadtime : 2.1ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xFF);
+		/* Min V : 5'b00101 (0.53V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x05);
+		/* HEAD_ROOM : 5'b00111 (0.747V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
+		/* Boost Max : 5'b10100 (8.53V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x14);
+		/* Release Time : 88.54us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x10);
+		break;
+	case SMA1305_SPEAKER_MODE:
+	default:
+		/* SPK Volume : -1.0dB */
+		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
+		/* Shoot Through Protection : Disable */
+		regmap_write(sma1305->regmap, SMA1305_0B_BST_TEST, 0x50);
+		/* VBAT & Temperature Sensing On, LPF Activate */
+		regmap_write(sma1305->regmap,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0x08);
+		/* Delay On - 200us */
+		regmap_write(sma1305->regmap, SMA1305_13_DELAY, 0x09);
+		/* HYSFB : 625kHz, BDELAY : 6'b010010 */
+		regmap_write(sma1305->regmap, SMA1305_14_MODULATOR, 0x12);
+		/* Tone Generator(Volume - Off) & Fine volume Activate */
+		regmap_write(sma1305->regmap, SMA1305_1E_TONE_GENERATOR, 0xA1);
+		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
+		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x7A);
+		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
+		regmap_write(sma1305->regmap, SMA1305_35_FDPEC_CTRL0, 0x16);
+		/* ENV_TRA, BOP_CTRL Enable */
+		regmap_write(sma1305->regmap, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
+		/* OTA GM : 20uA/V */
+		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x02);
+		/* FLT_VDD_GAIN : 3.15V */
+		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xB0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
+		 * Ramp Compensation : 7.0A/us
+		 */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0xA4);
+		/* High P-gain, OCL : 4.0A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x54);
+		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
+		/* Min V : 5'b00101 (0.59V) */
+		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x04);
+		/* HEAD_ROOM : 5'b01000 (1.327V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x29);
+		/* Boost Max : 5'b10001 (10.03V) */
+		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x11);
+		/* Release Time : 83.33us */
+		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		break;
+	}
+
+	return 0;
+}
+
 static int sma1305_startup(struct snd_soc_component *component)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
@@ -2866,7 +2882,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 			PLL_MASK, PLL_ON);
 
 	regmap_update_bits(sma1305->regmap, SMA1305_10_SYSTEM_CTRL1,
-			SPK_MODE_MASK, SPK_STEREO);
+			SPK_MODE_MASK, SPK_MONO);
 
 	regmap_update_bits(sma1305->regmap, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_ON);
@@ -2909,6 +2925,9 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 
 	regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_MUTE);
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	sma_amp_update_big_data();
+#endif
 
 	/* To improve the Boost OCP issue,
 	 * time should be available for the Boost release time(40ms)
@@ -3101,7 +3120,12 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 	struct snd_soc_component *component = dai->component;
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int input_format = 0;
-	unsigned int bclk = params_rate(params) * params_physical_width(params)
+	unsigned int bclk = 0;
+
+	if (sma1305->format == SND_SOC_DAIFMT_DSP_A)
+		bclk = params_rate(params) * sma1305->frame_size;
+	else
+		bclk = params_rate(params) * params_physical_width(params)
 			* params_channels(params);
 
 	dev_info(component->dev,
@@ -3164,48 +3188,6 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 		return -EINVAL;
 		}
 
-		/* Setting TDM Rx operation */
-		if (sma1305->format == SND_SOC_DAIFMT_DSP_A) {
-			regmap_update_bits(sma1305->regmap,
-				SMA1305_A4_TOP_MAN3,
-				INTERFACE_MASK, TDM_FORMAT);
-			switch (params_physical_width(params)) {
-			case 16:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_DL_MASK, TDM_DL_16);
-			break;
-			case 32:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_DL_MASK, TDM_DL_32);
-			break;
-
-			default:
-			dev_err(component->dev, "%s not support TDM %d bit\n",
-				__func__, params_physical_width(params));
-			}
-			switch (params_channels(params)) {
-			case 4:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_N_SLOT_MASK, TDM_N_SLOT_4);
-			break;
-			case 8:
-			regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
-					TDM_N_SLOT_MASK, TDM_N_SLOT_8);
-			break;
-			default:
-			dev_err(component->dev, "%s not support TDM %d channel\n",
-				__func__, params_channels(params));
-			}
-			/* Select a slot to process TDM Rx data */
-			if (sma1305->tdm_slot_rx < params_channels(params))
-				regmap_update_bits(sma1305->regmap,
-					SMA1305_A5_TDM1, TDM_SLOT1_RX_POS_MASK,
-					(sma1305->tdm_slot_rx) << 3);
-			else
-				dev_err(component->dev, "%s Incorrect tdm-slot-rx %d set\n",
-					__func__, sma1305->tdm_slot_rx);
-		}
-
 	/* substream->stream is SNDRV_PCM_STREAM_CAPTURE */
 	} else {
 
@@ -3245,20 +3227,6 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 						params_format(params));
 			return -EINVAL;
 
-		}
-
-		/* Setting TDM Tx operation */
-		if (sma1305->format == SND_SOC_DAIFMT_DSP_A) {
-			regmap_update_bits(sma1305->regmap, SMA1305_A5_TDM1,
-					TDM_TX_MODE_MASK, TDM_TX_MONO);
-			/* Select a slot to process TDM Tx data */
-			if (sma1305->tdm_slot_tx < params_channels(params))
-				regmap_update_bits(sma1305->regmap,
-					SMA1305_A6_TDM2, TDM_SLOT1_TX_POS_MASK,
-					(sma1305->tdm_slot_tx) << 3);
-			else
-				dev_err(component->dev, "%s Incorrect tdm-slot-tx %d set\n",
-					__func__, sma1305->tdm_slot_tx);
 		}
 	}
 
@@ -3449,11 +3417,79 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 	return 0;
 }
 
+static int sma1305_dai_set_tdm_slot(struct snd_soc_dai *dai,
+				   unsigned int tx_mask, unsigned int rx_mask,
+				   int slots, int slot_width)
+{
+	struct snd_soc_component *component  = dai->component;
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	dev_info(component->dev, "%s : slots - %d, slot_width - %d\n",
+			__func__, slots, slot_width);
+
+	sma1305->frame_size = slot_width * slots;
+
+	regmap_update_bits(sma1305->regmap, SMA1305_A4_TOP_MAN3,
+		INTERFACE_MASK, TDM_FORMAT);
+
+	switch (slot_width) {
+	case 16:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_DL_MASK, TDM_DL_16);
+	break;
+	case 32:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_DL_MASK, TDM_DL_32);
+	break;
+
+	default:
+	dev_err(component->dev, "%s not support TDM %d slot_width\n",
+		__func__, slot_width);
+	}
+
+	switch (slots) {
+	case 4:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_N_SLOT_MASK, TDM_N_SLOT_4);
+	break;
+	case 8:
+	regmap_update_bits(sma1305->regmap, SMA1305_A6_TDM2,
+			TDM_N_SLOT_MASK, TDM_N_SLOT_8);
+	break;
+	default:
+	dev_err(component->dev, "%s not support TDM %d slots\n",
+		__func__, slots);
+	}
+
+	/* Select a slot to process TDM Rx data */
+	if (sma1305->tdm_slot_rx < slots)
+		regmap_update_bits(sma1305->regmap,
+			SMA1305_A5_TDM1, TDM_SLOT1_RX_POS_MASK,
+			(sma1305->tdm_slot_rx) << 3);
+	else
+		dev_err(component->dev, "%s Incorrect tdm-slot-rx %d set\n",
+			__func__, sma1305->tdm_slot_rx);
+
+	regmap_update_bits(sma1305->regmap, SMA1305_A5_TDM1,
+			TDM_TX_MODE_MASK, TDM_TX_MONO);
+	/* Select a slot to process TDM Tx data */
+	if (sma1305->tdm_slot_tx < slots)
+		regmap_update_bits(sma1305->regmap,
+			SMA1305_A6_TDM2, TDM_SLOT1_TX_POS_MASK,
+			(sma1305->tdm_slot_tx) << 3);
+	else
+		dev_err(component->dev, "%s Incorrect tdm-slot-tx %d set\n",
+			__func__, sma1305->tdm_slot_tx);
+
+	return 0;
+}
+
 static const struct snd_soc_dai_ops sma1305_dai_ops_amp = {
 	.set_sysclk = sma1305_dai_set_sysclk_amp,
 	.set_fmt = sma1305_dai_set_fmt_amp,
 	.hw_params = sma1305_dai_hw_params_amp,
 	.digital_mute = sma1305_dai_digital_mute,
+	.set_tdm_slot = sma1305_dai_set_tdm_slot,
 };
 
 #define SMA1305_RATES_PLAYBACK SNDRV_PCM_RATE_8000_96000
@@ -3521,18 +3557,9 @@ static irqreturn_t sma1305_isr(int irq, void *data)
 {
 	struct sma1305_priv *sma1305 = (struct sma1305_priv *) data;
 
-	if ((!sma1305->isr_manual_mode)
-			&& (sma1305->check_fault_status)) {
-		if (sma1305->check_fault_period > 0)
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					sma1305->check_fault_period * HZ);
-		else
-			queue_delayed_work(system_freezable_wq,
-				&sma1305->check_fault_work,
-					CHECK_PERIOD_TIME * HZ);
-		return IRQ_HANDLED;
-	}
+	if (sma1305->check_fault_status)
+		queue_delayed_work(system_freezable_wq,
+				&sma1305->check_fault_work, 0);
 
 	if (sma1305->isr_manual_mode) {
 		regmap_update_bits(sma1305->regmap, SMA1305_93_INT_CTRL,
@@ -3666,6 +3693,7 @@ int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
 
 	return ret;
 }
+EXPORT_SYMBOL(afe_ff_prot_algo_ctrl);
 #endif
 
 static void sma1305_check_amb_temp_worker(struct work_struct *work)
@@ -3823,7 +3851,7 @@ static int sma1305_reset(struct snd_soc_component *component)
 		dev_info(component->dev, "SMA1305 OTP Status Fail\n");
 
 	/* Register Initial Value Setting */
-	for (i = 0; i < ARRAY_SIZE(sma1305_reg_def); i++)
+	for (i = 0; i < (unsigned int) ARRAY_SIZE(sma1305_reg_def); i++)
 		regmap_write(sma1305->regmap,
 			sma1305_reg_def[i].reg, sma1305_reg_def[i].def);
 	if (sma1305->rev_num == REV_NUM_REV0) {
@@ -3876,11 +3904,26 @@ static int sma1305_reset(struct snd_soc_component *component)
 		SMA1305_11_SYSTEM_CTRL2, MONOMIX_MASK, MONOMIX_ON);
 	}
 
-	dev_info(component->dev,
-		"%s init_vol is 0x%x\n", __func__, sma1305->init_vol);
+	return 0;
+}
+
+int get_sma_amp_component(struct snd_soc_component **component)
+{
+	*component = sma1305_amp_component;
+	return 0;
+}
+EXPORT_SYMBOL(get_sma_amp_component);
+
+#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
+int sma1305_reinit(struct snd_soc_component *component)
+{
+	sma1305_reset(component);
+	sma1305_spk_rcv_conf(component);
 
 	return 0;
 }
+EXPORT_SYMBOL(sma1305_reinit);
+#endif
 
 static ssize_t dsp_prepare_time_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
@@ -4076,6 +4119,7 @@ static int sma1305_probe(struct snd_soc_component *component)
 
 	snd_soc_dapm_sync(dapm);
 
+	sma1305_amp_component = component;
 	sma1305_reset(component);
 
 	return 0;
@@ -4129,7 +4173,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV013\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV014\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4144,8 +4188,9 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		dev_err(&client->dev,
 			"Failed to allocate register map: %d\n", ret);
 
-		if (sma1305->regmap)
-			regmap_exit(sma1305->regmap);
+		/* Comment out the code due to GKI build error */
+//		if (sma1305->regmap)
+//			regmap_exit(sma1305->regmap);
 
 		devm_kfree(&client->dev, sma1305);
 
@@ -4154,9 +4199,9 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 
 	if (np) {
 		if (!of_property_read_u32(np, "init-vol", &value)) {
+			sma1305->init_vol = value;
 			dev_info(&client->dev,
 				"init_vol is 0x%x from DT\n", value);
-			sma1305->init_vol = value;
 		} else {
 			dev_info(&client->dev,
 				"init_vol is set with 0x32(-1.0dB)\n");
@@ -4358,6 +4403,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	if ((ret != 0) || ((device_info & 0xF8) != DEVICE_ID)) {
 		dev_err(&client->dev, "device initialization error (%d 0x%02X)",
 				ret, device_info);
+		devm_kfree(&client->dev, sma1305);
+		return -ENODEV;
 	}
 	dev_info(&client->dev, "chip version 0x%02X\n", device_info);
 
@@ -4382,7 +4429,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->fix_gain_count = 0;
 	sma1305->check_amb_temp_status = true;
 
-	sma1305->devtype = id->driver_data;
+	sma1305->devtype = (enum sma1305_type) id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
 
@@ -4472,16 +4519,16 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 
 	dev_info(&client->dev, "%s\n", __func__);
 
-	cancel_delayed_work_sync(&sma1305->check_fault_work);
-	cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+	if (sma1305 != NULL) {
+		cancel_delayed_work_sync(&sma1305->check_fault_work);
+		cancel_delayed_work_sync(&sma1305->check_amb_temp_work);
+		snd_soc_unregister_component(&client->dev);
 
-	snd_soc_unregister_component(&client->dev);
+		if (sma1305->irq < 0)
+			devm_free_irq(&client->dev, sma1305->irq, sma1305);
 
-	if (sma1305->irq < 0)
-		devm_free_irq(&client->dev, sma1305->irq, sma1305);
-
-	if (sma1305)
 		devm_kfree(&client->dev, sma1305);
+	}
 
 	return 0;
 }

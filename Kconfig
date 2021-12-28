@@ -12,5 +12,6 @@ config SND_SOC_SMA1305
 
 config CONFIG_SND_SOC_APS_ALGO
 	bool "Iron Device Advanced Protection Solution"
+	depends on SND_SOC_SMA1305
 
 endmenu

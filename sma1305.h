@@ -1,7 +1,7 @@
-/*
- * sma1305.h -- sma1305 ALSA SoC Audio driver
+// SPDX-License-Identifier: GPL-2.0-or-later
+/* sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r013, 2021.12.01
+ * r014, 2021.12.28
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -12,6 +12,16 @@
 
 #ifndef _SMA1305_H
 #define _SMA1305_H
+
+#include <sound/soc.h>
+
+#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
+int sma1305_reinit(struct snd_soc_component *component);
+#endif
+
+int get_sma_amp_component(struct snd_soc_component **component);
+int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
+		uint8_t get_set, uint32_t length);
 
 #define SMA1305_I2C_ADDR_00		0x1e
 #define SMA1305_I2C_ADDR_01		0x3e
@@ -118,7 +128,7 @@
 
 #define SMA1305_90_CRESTLIM1			0x90
 #define SMA1305_91_CRESTLIM2			0x91
-#define SMA1305_92_FDPEC_CTRL1			0x92 
+#define SMA1305_92_FDPEC_CTRL1			0x92
 #define SMA1305_93_INT_CTRL				0x93
 #define SMA1305_94_BOOST_CTRL9			0x94
 #define SMA1305_95_BOOST_CTRL10			0x95
@@ -157,7 +167,7 @@
 #define SMA1305_F7_READY_FOR_T_SAR		0xF7
 #define SMA1305_F8_STATUS_T1			0xF8
 #define SMA1305_F9_STATUS_T2			0xF9
-#define SMA1305_FA_STATUS1  			0xFA
+#define SMA1305_FA_STATUS1              0xFA
 #define SMA1305_FB_STATUS2				0xFB
 #define SMA1305_FC_STATUS3				0xFC
 #define SMA1305_FD_STATUS4				0xFD
@@ -170,7 +180,7 @@
 #define POWER_ON			(1<<0)
 
 /* Left Polarity */
-#define LEFTPOL_MASK 			(1<<3)
+#define LEFTPOL_MASK            (1<<3)
 #define LOW_FIRST_CH			(0<<3)
 #define HIGH_FIRST_CH			(1<<3)
 
@@ -220,7 +230,7 @@
 #define OUTPUT_PORT_ENABLE	(2<<6)
 
 /* SDO Output */
-#define SDO_OUTPUT_MASK 	(1<<3)
+#define SDO_OUTPUT_MASK     (1<<3)
 #define LOGIC_OUTPUT		(0<<3)
 #define HIGH_Z_OUTPUT		(1<<3)
 
