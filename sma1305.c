@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r012, 2021.03.16	- initial version  sma1305
+ * r013, 2022.04.25	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -101,6 +101,7 @@ struct sma1305_priv {
 	unsigned int sdo0_sel;
 	unsigned int sdo1_sel;
 	atomic_t irq_enabled;
+	bool force_mute;
 };
 
 static struct sma1305_pll_match sma1305_pll_matches[] = {
@@ -410,6 +411,34 @@ static int force_sdo_bypass_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int force_mute_control_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+		snd_soc_kcontrol_component(kcontrol);
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = (long) sma1305->force_mute;
+
+	return 0;
+}
+
+static int force_mute_control_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+		snd_soc_kcontrol_component(kcontrol);
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+	int sel = (int)ucontrol->value.integer.value[0];
+
+	sma1305->force_mute = (bool)sel;
+
+	if (sma1305->amp_power_status) {
+		regmap_update_bits(sma1305->regmap,
+			SMA1305_0E_MUTE_VOL_CTRL, 0x01, sel);
+	}
+	return 0;
+}
 /* 0x01[6:4] I2SMODE */
 static const char * const sma1305_input_format_text[] = {
 	"I2S", "LJ", "Reserved", "Reserved",
@@ -2373,7 +2402,6 @@ SOC_SINGLE_EXT("Power Up(1:Up_0:Down)", SND_SOC_NOPM, 0, 1, 0,
 	power_up_down_control_get, power_up_down_control_put),
 SOC_SINGLE_EXT("Force AMP Power Down", SND_SOC_NOPM, 0, 1, 0,
 	power_down_control_get, power_down_control_put),
-
 SOC_SINGLE_EXT("Force SDO Bypass", SND_SOC_NOPM, 0, 1, 0,
 	force_sdo_bypass_get, force_sdo_bypass_put),
 
@@ -2414,6 +2442,8 @@ SOC_ENUM_EXT("Mute slope", sma1305_mute_slope_enum,
 	sma1305_mute_slope_get, sma1305_mute_slope_put),
 SOC_SINGLE("Speaker Mute Switch(1:muted_0:un)",
 		SMA1305_0E_MUTE_VOL_CTRL, 0, 1, 0),
+SOC_SINGLE_EXT("Force Mute Switch", SND_SOC_NOPM, 0, 1, 0,
+	force_mute_control_get, force_mute_control_put),
 
 /* VBAT_TEMP_SENSING [0x0F] */
 SOC_SINGLE("VBAT & Temp Sensing(1:Off_0:On)",
@@ -2837,8 +2867,8 @@ static int sma1305_startup(struct snd_soc_component *component)
 
 	regmap_update_bits(sma1305->regmap, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_ON);
-
-	regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
+	if ((sma1305->force_mute) == false)
+		regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_UNMUTE);
 
 	sma1305->amp_power_status = true;
@@ -3273,12 +3303,12 @@ static int sma1305_dai_digital_mute(struct snd_soc_dai *dai, int mute)
 		regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 					SPK_MUTE_MASK, SPK_MUTE);
 	} else {
-		dev_info(component->dev, "%s : %s\n", __func__, "UNMUTE");
-
-		regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
+		if(sma1305->force_mute == false) {
+			dev_info(component->dev, "%s : %s\n", __func__, "UNMUTE");
+			regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 					SPK_MUTE_MASK, SPK_UNMUTE);
+		}
 	}
-
 	return 0;
 }
 
@@ -3919,7 +3949,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV012\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV013\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4169,6 +4199,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 
 	sma1305->spk_rcv_mode = SMA1305_SPEAKER_MODE;
 
+	sma1305->force_mute = false;
 	sma1305->sdo_bypass_flag = false;
 	sma1305->force_amp_power_down = false;
 	sma1305->amp_power_status = false;
@@ -4184,8 +4215,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 
 		ret = gpio_request(sma1305->gpio_int, "sma1305-irq");
 		if (ret) {
-			dev_info(&client->dev, "gpio_request failed\n");
-			return ret;
+			dev_info(&client->dev, "Duplicated gpio request\n");
+			/* return ret; */
 		}
 
 		sma1305->irq = gpio_to_irq(sma1305->gpio_int);

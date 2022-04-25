@@ -1,5 +1,5 @@
 # Linux_Driver_SMA1305
-SMA1305 Linux Driver for Kernel 4.19
+SMA1305 Linux Driver for Kernel 5.4
 
 REV002: Initial Release.
 
@@ -25,3 +25,13 @@ REV008: TDM interface at codec DAI.
 		Interrupt detection at low level.
 
 REV009: Error return in i2c fail.
+
+REV010: sysfs reinit node to reinitialize SMA1305.
+		Remove init_vol log in sma1305_reset to comply with checkpatch script.
+		Mixer control text change to match the displayed value with data spec in FDPEC gain.
+
+REV011: Config option for factory recovery.
+
+REV012: Fixes for defects by customer prevention tool.
+
+REV013: Added force mute function and fixed duplicated gpio interrupt issue.
