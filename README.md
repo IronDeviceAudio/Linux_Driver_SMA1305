@@ -35,3 +35,5 @@ REV011: Config option for factory recovery.
 REV012: Fixes for defects by customer prevention tool.
 
 REV013: Added force mute function and fixed duplicated gpio interrupt issue.
+
+REV014: Added dai_shutdown function to match the order of SCK off and AMP off.

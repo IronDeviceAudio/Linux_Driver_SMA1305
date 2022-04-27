@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r013, 2022.04.25	- initial version  sma1305
+ * r014, 2022.04.27	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -3301,15 +3301,39 @@ static int sma1305_dai_digital_mute(struct snd_soc_dai *dai, int mute)
 		dev_info(component->dev, "%s : %s\n", __func__, "MUTE");
 
 		regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
-					SPK_MUTE_MASK, SPK_MUTE);
+			SPK_MUTE_MASK, SPK_MUTE);
 	} else {
-		if(sma1305->force_mute == false) {
-			dev_info(component->dev, "%s : %s\n", __func__, "UNMUTE");
-			regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
+		if (sma1305->force_mute == false) {
+			dev_info(component->dev,
+				"%s : %s\n", __func__, "UNMUTE");
+			regmap_update_bits(sma1305->regmap,
+				SMA1305_0E_MUTE_VOL_CTRL,
 					SPK_MUTE_MASK, SPK_UNMUTE);
 		}
 	}
 	return 0;
+}
+
+static void sma1305_dai_shutdown(struct snd_pcm_substream *substream,
+	struct snd_soc_dai *dai)
+{
+	struct snd_soc_component *component = dai->component;
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	if (!(sma1305->amp_power_status)) {
+		dev_info(component->dev, "%s : %s\n",
+			__func__, "Already AMP Shutdown");
+		return;
+	}
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		dev_info(component->dev,
+				"%s : %s\n", __func__, "stream playback");
+	} else {
+		dev_info(component->dev,
+				"%s : %s\n", __func__, "stream capture");
+	}
+	sma1305_shutdown(component);
 }
 
 static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
@@ -3466,6 +3490,7 @@ static const struct snd_soc_dai_ops sma1305_dai_ops_amp = {
 	.hw_params = sma1305_dai_hw_params_amp,
 	.digital_mute = sma1305_dai_digital_mute,
 	.set_tdm_slot = sma1305_dai_set_tdm_slot,
+	.shutdown = sma1305_dai_shutdown,
 };
 
 #define SMA1305_RATES_PLAYBACK SNDRV_PCM_RATE_8000_96000
@@ -3949,7 +3974,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV013\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV014\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4213,7 +4238,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		dev_info(&client->dev, "%s , i2c client name: %s\n",
 			__func__, dev_name(sma1305->dev));
 
-		ret = gpio_request(sma1305->gpio_int, "sma1305-irq");
+		ret = devm_gpio_request(&client->dev,
+				sma1305->gpio_int, "sma1305-irq");
 		if (ret) {
 			dev_info(&client->dev, "Duplicated gpio request\n");
 			/* return ret; */
@@ -4226,7 +4252,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			dev_warn(&client->dev, "interrupt disabled\n");
 		} else {
 		/* Request system IRQ for SMA1305 */
-			ret = request_threaded_irq(sma1305->irq,
+			ret = devm_request_threaded_irq
+				(&client->dev, sma1305->irq,
 				NULL, sma1305_isr, IRQF_ONESHOT | IRQF_SHARED |
 				IRQF_TRIGGER_LOW, "sma1305", sma1305);
 			if (ret < 0) {
@@ -4234,8 +4261,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 						sma1305->irq, ret);
 				sma1305->irq = -1;
 				i2c_set_clientdata(client, NULL);
-				devm_free_irq(&client->dev,
-						sma1305->irq, sma1305);
 				devm_kfree(&client->dev, sma1305);
 				return ret;
 			}
