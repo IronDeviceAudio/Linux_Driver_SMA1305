@@ -37,3 +37,6 @@ REV012: Fixes for defects by customer prevention tool.
 REV013: Added force mute function and fixed duplicated gpio interrupt issue.
 
 REV014: Added dai_shutdown function to match the order of SCK off and AMP off.
+
+REV015: Check the ambient temperature and performs protective action when it is low temperature.
+		Passes the ambient temperature information to qualcomm dsp.

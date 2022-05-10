@@ -13,4 +13,8 @@ config SND_SOC_SMA1305
 config SMA1305_FACTORY_RECOVERY_SYSFS
 	bool "Factory recovery sysfs"
 
+config ID_APS_ALGO
+	bool "Iron Device Advanced Protection Algorithm"
+	depends on SND_SOC_SMA1305
+
 endmenu
