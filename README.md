@@ -40,3 +40,5 @@ REV014: Added dai_shutdown function to match the order of SCK off and AMP off.
 
 REV015: Check the ambient temperature and performs protective action when it is low temperature.
 		Passes the ambient temperature information to qualcomm dsp.
+
+REV016: Added Qualcomm DSP AFE port id information to DT.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r015, 2022.05.10	- initial version  sma1305
+ * r016, 2022.05.10	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -117,6 +117,7 @@ struct sma1305_priv {
 	unsigned int frame_size;
 	int irq;
 	int gpio_int;
+	uint16_t afe_port_id;
 	unsigned int sdo_ch;
 	unsigned int sdo0_sel;
 	unsigned int sdo1_sel;
@@ -3737,13 +3738,11 @@ static void sma_afe_init(void)
 	afe_sma_aps_init(AFE_RX_ID_APS_MODULE);
 }
 
-static int sma_aps_get_set(u8 *user_data, uint32_t param_id,
+static int sma_aps_get_set(u8 *user_data, uint16_t port_id, uint32_t param_id,
 		uint8_t get_set, uint32_t length)
 {
 	int ret = 0;
 	uint32_t module_id;
-	/* AFE_PORT_ID_QUATERNARY_MI2S_RX */
-	uint16_t port_id = 0x1006;
 
 	module_id = AFE_RX_ID_APS_MODULE;
 
@@ -3770,12 +3769,12 @@ static int sma_aps_get_set(u8 *user_data, uint32_t param_id,
 /* Wrapper around set/get parameter,
  * all set/get commands pass through this Wrapper
  */
-int sma_aps_algo_ctrl(u8 *user_data, uint32_t param_id,
+int sma_aps_algo_ctrl(u8 *user_data, uint16_t port_id, uint32_t param_id,
 		uint8_t get_set, uint32_t length)
 {
 	int ret = 0;
 
-	ret = sma_aps_get_set(user_data, param_id, get_set, length);
+	ret = sma_aps_get_set(user_data, port_id, param_id, get_set, length);
 
 	return ret;
 }
@@ -3884,7 +3883,8 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
 			__func__, data_dec);
 #ifdef CONFIG_ID_APS_ALGO
-		sma_aps_algo_ctrl((u8 *)&data_dec, AFE_RX_ID_APS_AMB_TEMP,
+		sma_aps_algo_ctrl((u8 *)&data_dec, sma1305->afe_port_id,
+					AFE_RX_ID_APS_AMB_TEMP,
 					SMA_SET_PARAM, sizeof(int));
 #endif
 		queue_delayed_work(system_freezable_wq,
@@ -4264,7 +4264,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV014\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV016\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4329,6 +4329,15 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			dev_info(&client->dev,
 				"Default setting of tdm slot tx is '0'\n");
 			sma1305->tdm_slot_tx = 0;
+		}
+		if (!of_property_read_u32(np, "qdsp-port-id", &value)) {
+			dev_info(&client->dev,
+				"qdsp afe port id is '%d' from DT\n", value);
+			sma1305->afe_port_id = value;
+		} else {
+			dev_info(&client->dev,
+				"Default setting of afe port id is '0xffff'\n");
+			sma1305->afe_port_id = 0xffff;
 		}
 		if (!of_property_read_u32(np, "sys-clk-id", &value)) {
 			switch (value) {
