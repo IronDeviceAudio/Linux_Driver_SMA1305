@@ -1183,7 +1183,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 				return -EINVAL;
 #endif /*CONFIG_TAS25XX_ALGO*/
 #if IS_ENABLED(CONFIG_ID_APS_ALGO)
-			if ((payload[1] == this_afe.sma_module_rx)) {
+			if (param_id == AFE_RX_ID_APS_CALLBACK) {
 				if (sma_aps_algo_callback(data->opcode, data->payload,
 							data->payload_size))
 					return -EINVAL;

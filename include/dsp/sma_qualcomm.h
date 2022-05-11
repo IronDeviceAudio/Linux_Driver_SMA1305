@@ -14,6 +14,7 @@
 #define APS_PAYLOAD_SIZE        14
 #define SMA_GET_PARAM			1
 #define SMA_SET_PARAM			0
+#define AFE_RX_ID_APS_CALLBACK				0x1000B915
 
 struct afe_id_aps_get_set_params_t {
 	uint32_t payload[APS_PAYLOAD_SIZE];
