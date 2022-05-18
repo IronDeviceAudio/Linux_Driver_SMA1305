@@ -42,3 +42,5 @@ REV015: Check the ambient temperature and performs protective action when it is 
 		Passes the ambient temperature information to qualcomm dsp.
 
 REV016: Added Qualcomm DSP AFE port id information to DT.
+
+REV017: Implemented to read dsp speaker temperature information.

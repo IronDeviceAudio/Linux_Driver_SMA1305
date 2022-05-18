@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r016, 2022.05.10	- initial version  sma1305
+ * r017, 2022.05.18	- initial version  sma1305
  *
  * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
  *
@@ -39,6 +39,7 @@
 
 #define AFE_RX_ID_APS_MODULE 0x1000B910
 #define AFE_RX_ID_APS_AMB_TEMP 0x1000B916
+#define AFE_RX_ID_APS_FINAL_TEMP 0x1000B918
 
 #define CHECK_PERIOD_TIME 1 /* sec per HZ */
 #define GAIN_CONT_5_MIN 30
@@ -3025,6 +3026,9 @@ static int sma1305_dac_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_component *component =
 		snd_soc_dapm_to_component(w->dapm);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+#ifdef CONFIG_ID_APS_ALGO
+	int32_t fb_spk_temp[2] = {0,};
+#endif
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -3042,9 +3046,15 @@ static int sma1305_dac_event(struct snd_soc_dapm_widget *w,
 
 	case SND_SOC_DAPM_PRE_PMD:
 		dev_info(component->dev, "%s : PRE_PMD\n", __func__);
+#ifdef CONFIG_ID_APS_ALGO
+		sma_aps_algo_ctrl((u8 *)fb_spk_temp, sma1305->afe_port_id,
+					AFE_RX_ID_APS_FINAL_TEMP,
+					SMA_GET_PARAM, sizeof(fb_spk_temp));
+		dev_info(component->dev, "%s : SPK Temp[0]=%d, SPK Temp[1]=%d\n",
+					__func__, fb_spk_temp[0], fb_spk_temp[1]);
+#endif
 
 		sma1305_shutdown(component);
-
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
@@ -3880,8 +3890,8 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 				 */
 			}
 		}
-	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
-			__func__, data_dec);
+//	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
+//			__func__, data_dec);
 #ifdef CONFIG_ID_APS_ALGO
 		sma_aps_algo_ctrl((u8 *)&data_dec, sma1305->afe_port_id,
 					AFE_RX_ID_APS_AMB_TEMP,
@@ -4264,7 +4274,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV016\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV017\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
