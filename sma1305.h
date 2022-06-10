@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r017, 2022.05.18
+ * r018, 2022.06.10
  *
- * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
+ * Copyright 2020 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

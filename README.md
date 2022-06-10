@@ -1,5 +1,5 @@
 # Linux_Driver_SMA1305
-SMA1305 Linux Driver for Kernel 5.4
+SMA1305 Linux Driver for Kernel 5.10
 
 REV002: Initial Release.
 
@@ -44,3 +44,5 @@ REV015: Check the ambient temperature and performs protective action when it is 
 REV016: Added Qualcomm DSP AFE port id information to DT.
 
 REV017: Implemented to read dsp speaker temperature information.
+
+REV018: To support Linux kernel version 5.10.

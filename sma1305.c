@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r017, 2022.05.18	- initial version  sma1305
+ * r018, 2022.06.10	- initial version  sma1305
  *
- * Copyright 2020 Silicon Mitus Corporation / Iron Device Corporation
+ * Copyright 2020 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -129,6 +129,8 @@ struct sma1305_priv {
 	unsigned int fix_gain_count;
 	const uint32_t *temp_gain_array;
 	uint32_t temp_gain_array_len;
+	bool playback_status;
+	bool capture_status;
 };
 
 static struct sma1305_pll_match sma1305_pll_matches[] = {
@@ -2536,7 +2538,7 @@ SND_SOC_BYTES_EXT("Tone Fine Volume", 1,
 	tone_fine_volume_get, tone_fine_volume_put),
 
 /* Comp_Lim1~4 [0x22 ~ 0x26] */
-SND_SOC_BYTES_EXT("Comp/Limiter Cotnrol", 5,
+SND_SOC_BYTES_EXT("Comp/Limiter Control", 5,
 	comp_hys_sel_get, comp_hys_sel_put),
 
 /* BROWN_OUT_PROT [0x27 ~ 0x32] */
@@ -3026,9 +3028,6 @@ static int sma1305_dac_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_component *component =
 		snd_soc_dapm_to_component(w->dapm);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
-#ifdef CONFIG_ID_APS_ALGO
-	int32_t fb_spk_temp[2] = {0,};
-#endif
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -3046,15 +3045,6 @@ static int sma1305_dac_event(struct snd_soc_dapm_widget *w,
 
 	case SND_SOC_DAPM_PRE_PMD:
 		dev_info(component->dev, "%s : PRE_PMD\n", __func__);
-#ifdef CONFIG_ID_APS_ALGO
-		sma_aps_algo_ctrl((u8 *)fb_spk_temp, sma1305->afe_port_id,
-					AFE_RX_ID_APS_FINAL_TEMP,
-					SMA_GET_PARAM, sizeof(fb_spk_temp));
-		dev_info(component->dev, "%s : SPK Temp[0]=%d, SPK Temp[1]=%d\n",
-					__func__, fb_spk_temp[0], fb_spk_temp[1]);
-#endif
-
-		sma1305_shutdown(component);
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
@@ -3364,7 +3354,7 @@ static int sma1305_dai_set_sysclk_amp(struct snd_soc_dai *dai,
 	return 0;
 }
 
-static int sma1305_dai_digital_mute(struct snd_soc_dai *dai, int mute)
+static int sma1305_dai_mute(struct snd_soc_dai *dai, int mute, int stream)
 {
 	struct snd_soc_component *component = dai->component;
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
@@ -3374,14 +3364,27 @@ static int sma1305_dai_digital_mute(struct snd_soc_dai *dai, int mute)
 			__func__, "Already AMP Shutdown");
 		return 0;
 	}
+	switch(stream) {
+	case SNDRV_PCM_STREAM_PLAYBACK:
+		dev_info(component->dev, "%s : stream = PLAYBACK\n", __func__);
+		break;
+	case SNDRV_PCM_STREAM_CAPTURE:
+		dev_info(component->dev, "%s : stream = CAPTURE\n", __func__);
+		break;
+	}
 
 	if (mute) {
+		if ((sma1305->playback_status == true)
+				&& (sma1305->capture_status == true))
+			return 0;
 		dev_info(component->dev, "%s : %s\n", __func__, "MUTE");
-
 		regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_MUTE);
 	} else {
 		if (sma1305->force_mute == false) {
+			if ((sma1305->playback_status == true)
+					&& (sma1305->capture_status == true))
+				return 0;
 			dev_info(component->dev,
 				"%s : %s\n", __func__, "UNMUTE");
 			regmap_update_bits(sma1305->regmap,
@@ -3392,26 +3395,50 @@ static int sma1305_dai_digital_mute(struct snd_soc_dai *dai, int mute)
 	return 0;
 }
 
+static int sma1305_dai_startup(struct snd_pcm_substream *substream,
+	struct snd_soc_dai *dai)
+{
+	struct snd_soc_component *component = dai->component;
+	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+
+	switch(substream->stream) {
+	case SNDRV_PCM_STREAM_PLAYBACK:
+		dev_info(component->dev,
+				"%s : stream = PLAYBACK\n", __func__);
+		sma1305->playback_status = true;
+		break;
+	case SNDRV_PCM_STREAM_CAPTURE:
+		dev_info(component->dev,
+				"%s : stream = CAPTURE\n", __func__);
+		sma1305->capture_status = true;
+		break;
+	}
+
+	return 0;
+}
+
 static void sma1305_dai_shutdown(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
 {
 	struct snd_soc_component *component = dai->component;
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	if (!(sma1305->amp_power_status)) {
-		dev_info(component->dev, "%s : %s\n",
-			__func__, "Already AMP Shutdown");
-		return;
-	}
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+	switch(substream->stream) {
+	case SNDRV_PCM_STREAM_PLAYBACK:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "stream playback");
-	} else {
+				"%s : stream = PLAYBACK\n", __func__);
+		if (sma1305->capture_status == false)
+			sma1305_shutdown(component);
+		sma1305->playback_status = false;
+		break;
+	case SNDRV_PCM_STREAM_CAPTURE:
 		dev_info(component->dev,
-				"%s : %s\n", __func__, "stream capture");
+				"%s : stream = CAPTURE\n", __func__);
+		if (sma1305->playback_status == false)
+			sma1305_shutdown(component);
+		sma1305->capture_status = false;
+		break;
 	}
-	sma1305_shutdown(component);
 }
 
 static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
@@ -3565,9 +3592,10 @@ static int sma1305_dai_set_tdm_slot(struct snd_soc_dai *dai,
 static const struct snd_soc_dai_ops sma1305_dai_ops_amp = {
 	.set_sysclk = sma1305_dai_set_sysclk_amp,
 	.set_fmt = sma1305_dai_set_fmt_amp,
-	.hw_params = sma1305_dai_hw_params_amp,
-	.digital_mute = sma1305_dai_digital_mute,
 	.set_tdm_slot = sma1305_dai_set_tdm_slot,
+	.mute_stream = sma1305_dai_mute,
+	.hw_params = sma1305_dai_hw_params_amp,
+	.startup = sma1305_dai_startup,
 	.shutdown = sma1305_dai_shutdown,
 };
 
@@ -4274,7 +4302,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	u32 value;
 	unsigned int device_info;
 
-	dev_info(&client->dev, "%s is here. Driver version REV017\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV018\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4551,6 +4579,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->sdo_bypass_flag = false;
 	sma1305->force_amp_power_down = false;
 	sma1305->amp_power_status = false;
+	sma1305->playback_status = false;
+	sma1305->capture_status = false;
 	sma1305->pll_matches = sma1305_pll_matches;
 	sma1305->num_of_pll_matches =
 		ARRAY_SIZE(sma1305_pll_matches);
