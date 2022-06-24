@@ -52,6 +52,12 @@
 				 * PLL_CLKIN_BCLK        : 0x03
 				 */
 				sma1305,gpio-int= <&gpio 4 0>;
+				/* SPK_4.0W_MODE   : 0x00,
+				 * SPK_6.0W_MODE   : 0x01,
+				 * RCV_0.1W_MODE   : 0x02,
+				 * RCV_0.5W_MODE   : 0x03,
+				 */
+				spk-rcv-mode = <1>;
 				sys-clk-id = <0x03>;
 				status = "okay";
 			};
