@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r019, 2022.06.24	- initial version  sma1305
+ * r020, 2022.06.28	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -44,6 +44,7 @@
 #define CHECK_PERIOD_TIME 1 /* sec per HZ */
 #define GAIN_CONT_5_MIN 30
 #define GAIN_CONT_1_MIN 6
+#define SMA1305_I2C_RETRY_COUNT 3
 
 #define PLL_MATCH(_input_clk_name, _output_clk_name, _input_clk,\
 		_post_n, _n, _vco,  _p_cp)\
@@ -4375,11 +4376,12 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 {
 	struct sma1305_priv *sma1305;
 	struct device_node *np = client->dev.of_node;
-	int ret;
+	int ret = 0;
 	u32 value;
 	unsigned int device_info;
+	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV019\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV020\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4621,8 +4623,13 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 
-	ret = regmap_read(sma1305->regmap,
-		SMA1305_FF_DEVICE_INDEX, &device_info);
+	while (retry_cnt--) {
+		ret = regmap_read(sma1305->regmap,
+			SMA1305_FF_DEVICE_INDEX, &device_info);
+		if (ret >= 0)
+			break;
+		msleep(20);
+	}
 
 	if ((ret != 0) || ((device_info & 0xF8) != DEVICE_ID)) {
 		dev_err(&client->dev, "device initialization error (%d 0x%02X)",

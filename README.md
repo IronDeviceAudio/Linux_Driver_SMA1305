@@ -48,3 +48,5 @@ REV017: Implemented to read dsp speaker temperature information.
 REV018: To support Linux kernel version 5.10.
 
 REV019: Added AMP output power mode setting in DT.
+
+REV020: Check whether the first i2c communication is possible.
