@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r020, 2022.06.28
+ * r021, 2022.06.29
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -45,11 +45,6 @@ int sma_aps_algo_ctrl(u8 *user_data, uint16_t port_id,
 #define SMA1305_VBAT_MON			0x05
 #define SMA1305_TEMP_MON			0x06
 #define SMA1305_AFTER_DELAY			0x07
-
-#define SMA1305_SPEAKER_4W_MODE			0x00
-#define SMA1305_SPEAKER_6W_MODE			0x01
-#define SMA1305_RECEIVER_0P1W_MODE		0x02
-#define SMA1305_RECEIVER_0P5W_MODE		0x03
 
 #define SMA1305_OFFSET_DEFAULT_MODE		0x00
 #define SMA1305_OFFSET_BURNING_MODE		0x01

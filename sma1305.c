@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r020, 2022.06.28	- initial version  sma1305
+ * r021, 2022.06.29	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -62,6 +62,13 @@ enum sma1305_type {
 	SMA1305,
 };
 
+enum sma1305_mode {
+	SMA1305_SPEAKER_4W_MODE = 0,
+	SMA1305_SPEAKER_6W_MODE,
+	SMA1305_RECEIVER_0P1W_MODE,
+	SMA1305_RECEIVER_0P5W_MODE
+};
+
 /* PLL clock setting Table */
 struct sma1305_pll_match {
 	char *input_clk_name;
@@ -86,7 +93,7 @@ struct sma1305_priv {
 	struct regmap *regmap;
 	struct sma1305_pll_match *pll_matches;
 	int num_of_pll_matches;
-	unsigned int spk_rcv_mode;
+	enum sma1305_mode spk_rcv_mode;
 	unsigned int sys_clk_id;
 	unsigned int init_vol;
 	unsigned int cur_vol;
@@ -2774,9 +2781,6 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	if (sma1305->spk_rcv_mode > 3)
-		return -EINVAL;
-
 	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
 			speaker_receiver_mode_text[sma1305->spk_rcv_mode]);
 
@@ -2905,7 +2909,6 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		regmap_write(sma1305->regmap, SMA1305_AD_BOOST_CTRL6, 0x0F);
 		break;
 	case SMA1305_SPEAKER_6W_MODE:
-	default:
 		/* SPK Volume : -1.0dB */
 		regmap_write(sma1305->regmap, SMA1305_0A_SPK_VOL, 0x32);
 		/* Shoot Through Protection : Disable */
@@ -2980,6 +2983,10 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		regmap_write(sma1305->regmap, SMA1305_0F_VBAT_TEMP_SENSING, 0x00);
 		regmap_write(sma1305->regmap, SMA1305_AF_LPF, 0x70);
 		break;
+	default:
+		dev_err(component->dev, "%s : Invalid value (%d)\n",
+					__func__, sma1305->spk_rcv_mode);
+		return -EINVAL;
 	}
 
 	return 0;
@@ -4381,7 +4388,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV020\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV021\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

@@ -50,3 +50,5 @@ REV018: To support Linux kernel version 5.10.
 REV019: Added AMP output power mode setting in DT.
 
 REV020: Check whether the first i2c communication is possible.
+
+REV021: Change to using exception handling and enum values.
