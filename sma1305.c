@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r021, 2022.06.29	- initial version  sma1305
+ * r022, 2022.10.14	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -31,15 +31,11 @@
 #include <linux/interrupt.h>
 #include <linux/of_gpio.h>
 #include <linux/power_supply.h>
-#ifdef CONFIG_ID_APS_ALGO
-#include <dsp/sma_qualcomm.h>
+#ifdef CONFIG_SND_SOC_APS_ALGO
+#include <sound/ff_prot_spk.h>
 #endif
 
 #include "sma1305.h"
-
-#define AFE_RX_ID_APS_MODULE 0x1000B910
-#define AFE_RX_ID_APS_AMB_TEMP 0x1000B916
-#define AFE_RX_ID_APS_FINAL_TEMP 0x1000B918
 
 #define CHECK_PERIOD_TIME 1 /* sec per HZ */
 #define GAIN_CONT_5_MIN 30
@@ -126,7 +122,6 @@ struct sma1305_priv {
 	unsigned int frame_size;
 	int irq;
 	int gpio_int;
-	uint16_t afe_port_id;
 	unsigned int sdo_ch;
 	unsigned int sdo0_sel;
 	unsigned int sdo1_sel;
@@ -158,6 +153,9 @@ static struct snd_soc_component *sma1305_amp_component;
 static int sma1305_startup(struct snd_soc_component *);
 static int sma1305_shutdown(struct snd_soc_component *);
 static int sma1305_spk_rcv_conf(struct snd_soc_component *);
+
+sma_send_msg_t ff_prot_dsp_write;
+sma_read_msg_t ff_prot_dsp_read;
 
 /* Initial register value - 4W SPK 2020.09.25 */
 static const struct reg_default sma1305_reg_def[] = {
@@ -2744,7 +2742,7 @@ SOC_ENUM_EXT("Speaker/Receiver Mode",
 	speaker_receiver_mode_get, speaker_receiver_mode_put),
 };
 
-static int sma1305_get_amb_temp(int *temp)
+static int sma1305_get_amb_temp(void)
 {
 	struct power_supply *psy;
 	int ret = 0;
@@ -2772,9 +2770,8 @@ static int sma1305_get_amb_temp(int *temp)
 		}
 		power_supply_put(psy);
 	}
-	*temp = DIV_ROUND_CLOSEST(value.intval, 10);
 
-	return ret;
+	return value.intval;
 }
 
 static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
@@ -3058,6 +3055,9 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 
 	regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_MUTE);
+#ifdef CONFIG_SND_SOC_APS_ALGO
+	sma_amp_update_big_data();
+#endif
 
 	/* To improve the Boost OCP issue,
 	 * time should be available for the Boost release time(40ms)
@@ -3853,53 +3853,52 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	mutex_unlock(&sma1305->lock);
 }
 
-#ifdef CONFIG_ID_APS_ALGO
-static void sma_afe_init(void)
-{
-	afe_sma_aps_init(AFE_RX_ID_APS_MODULE);
-}
-
-static int sma_aps_get_set(u8 *user_data, uint16_t port_id, uint32_t param_id,
+#ifdef CONFIG_SND_SOC_APS_ALGO
+static int afe_ff_prot_get_set(int *user_data, uint32_t param_id,
 		uint8_t get_set, uint32_t length)
 {
 	int ret = 0;
-	uint32_t module_id;
-
-	module_id = AFE_RX_ID_APS_MODULE;
-
-	sma_afe_init();
+	struct ff_prot_spk_data resp_data;
 
 	switch (get_set) {
 	case SMA_SET_PARAM:
-		ret = afe_sma_aps_set_calib_data(module_id, param_id,
-			length, user_data, port_id);
+		ret = ff_prot_dsp_write((void *)user_data, param_id, length);
 		break;
-
 	case SMA_GET_PARAM:
-		memset(user_data, 0, length);
-		ret = afe_sma_aps_get_calib_data(module_id, param_id,
-			length, user_data, port_id);
-		break;
+		memset(&resp_data, 0, sizeof(resp_data));
 
-	default:
+		ret = ff_prot_dsp_read((void *)&resp_data, param_id, length);
+
+		memcpy(user_data, resp_data.payload, length);
 		break;
 	}
+
 	return ret;
 }
+
+int sma_ext_register(sma_send_msg_t sma_send_msg,
+		sma_read_msg_t sma_read_msg)
+{
+	ff_prot_dsp_write = sma_send_msg;
+	ff_prot_dsp_read = sma_read_msg;
+
+	return 0;
+}
+EXPORT_SYMBOL(sma_ext_register);
 
 /* Wrapper around set/get parameter,
  * all set/get commands pass through this Wrapper
  */
-int sma_aps_algo_ctrl(u8 *user_data, uint16_t port_id, uint32_t param_id,
+int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
 		uint8_t get_set, uint32_t length)
 {
 	int ret = 0;
 
-	ret = sma_aps_get_set(user_data, port_id, param_id, get_set, length);
+	ret = afe_ff_prot_get_set(user_data, param_id, get_set, length);
 
 	return ret;
 }
-EXPORT_SYMBOL(sma_aps_algo_ctrl);
+EXPORT_SYMBOL(afe_ff_prot_algo_ctrl);
 #endif
 
 static void sma1305_check_amb_temp_worker(struct work_struct *work)
@@ -3910,19 +3909,14 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	int tmp_gn_len = sma1305->temp_gain_array_len / sizeof(uint32_t);
 	struct sma1305_temp_gain_match *reg_val;
 	unsigned int cnt = 0;
-	int data_dec = 0;
-	int ret = 0;
+	int data = 0;
+	int data_dec = sma1305_get_amb_temp();
 	int8_t limit, gain, active;
-
-	ret = sma1305_get_amb_temp(&data_dec);
-
-	if (ret < 0)
-		dev_err(sma1305->dev,
-			"failed to read sma1305_get_amb_temp() : %d\n", ret);
 
 	if (sma1305->amp_power_status) {
 
 		mutex_lock(&sma1305->routing_lock);
+		data = DIV_ROUND_CLOSEST(data_dec, 10);
 
 		if (sma1305->temp_gain_array != NULL) {
 			for (cnt = 0; cnt < tmp_gn_len; cnt += 3) {
@@ -3935,7 +3929,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 
 				gain = gain + 2;
 
-				if ((limit >= data_dec) &&
+				if ((limit >= data) &&
 					active && (gain >= sma1305->init_vol)) {
 					sma1305->low_temp_fix_gain = true;
 					sma1305->low_temp_max_atten = gain;
@@ -3950,7 +3944,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 				if (sma1305->low_temp_fix_gain == true &&
 						sma1305->fix_gain_count <
 						GAIN_CONT_5_MIN &&
-						data_dec >= -10 && active) {
+						data >= -10 && active) {
 					sma1305->fix_gain_count++;
 				} else if (sma1305->fix_gain_count >=
 						GAIN_CONT_5_MIN &&
@@ -4002,10 +3996,9 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 			}
 		}
 //	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
-//			__func__, data_dec);
-#ifdef CONFIG_ID_APS_ALGO
-		sma_aps_algo_ctrl((u8 *)&data_dec, sma1305->afe_port_id,
-					AFE_RX_ID_APS_AMB_TEMP,
+//			__func__, data);
+#ifdef CONFIG_SND_SOC_APS_ALGO
+		afe_ff_prot_algo_ctrl(&data_dec, 0,
 					SMA_SET_PARAM, sizeof(int));
 #endif
 		queue_delayed_work(system_freezable_wq,
@@ -4388,7 +4381,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV021\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV022\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4453,15 +4446,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			dev_info(&client->dev,
 				"Default setting of tdm slot tx is '0'\n");
 			sma1305->tdm_slot_tx = 0;
-		}
-		if (!of_property_read_u32(np, "qdsp-port-id", &value)) {
-			dev_info(&client->dev,
-				"qdsp afe port id is '%d' from DT\n", value);
-			sma1305->afe_port_id = value;
-		} else {
-			dev_info(&client->dev,
-				"Default setting of afe port id is '0xffff'\n");
-			sma1305->afe_port_id = 0xffff;
 		}
 		if (!of_property_read_u32(np, "spk-rcv-mode", &value)) {
 			dev_info(&client->dev,
