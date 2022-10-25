@@ -123,6 +123,7 @@ void sma_amp_update_big_data(void)
 		}
 	}
 }
+EXPORT_SYMBOL(sma_amp_update_big_data);
 
 static ssize_t temp_max_show(struct device *dev,
 					struct device_attribute *attr,
