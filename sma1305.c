@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r021, 2022.06.29	- initial version  sma1305
+ * r022, 2022.11.03	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -2932,18 +2932,18 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		regmap_write(sma1305->regmap, SMA1305_8F_ANALOG_TEST, 0x02);
 		/* FLT_VDD_GAIN : 3.2V */
 		regmap_write(sma1305->regmap, SMA1305_92_FDPEC_CTRL1, 0xC0);
-		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
+		/* Switching Off Slew : 4.8ns, Switching Slew : 2.6ns,
 		 * Ramp Compensation : 7.0A/us
 		 */
-		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0xA4);
-		/* High P-gain, OCL : 4.5A */
-		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x64);
-		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
-		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0x57);
-		/* Min V : 5'b00101 (0.59V) */
+		regmap_write(sma1305->regmap, SMA1305_94_BOOST_CTRL9, 0x64);
+		/* High P-gain, OCL : 5.1A */
+		regmap_write(sma1305->regmap, SMA1305_95_BOOST_CTRL10, 0x74);
+		/* Driver On Deadtime : 4.8ns, Driver Off Deadtime : 5.8ns */
+		regmap_write(sma1305->regmap, SMA1305_96_BOOST_CTRL11, 0xDA);
+		/* Min V : 5'b00100 (0.70V) */
 		regmap_write(sma1305->regmap, SMA1305_A8_BOOST_CTRL1, 0x04);
-		/* HEAD_ROOM : 5'b01000 (1.581V) */
-		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x29);
+		/* HEAD_ROOM : 5'b00111 (1.230V) */
+		regmap_write(sma1305->regmap, SMA1305_A9_BOOST_CTRL2, 0x27);
 		/* Boost Max : 5'b10000 (11.24V) */
 		regmap_write(sma1305->regmap, SMA1305_AB_BOOST_CTRL4, 0x10);
 		/* Release Time : 83.33us */
@@ -2952,7 +2952,7 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		regmap_write(sma1305->regmap, SMA1305_34_OCP_SPK, 0x01);
 		regmap_write(sma1305->regmap, SMA1305_99_OTP_TRM2, 0x00);
 		/* Comp/Limiter Cotnrol */
-		regmap_write(sma1305->regmap, SMA1305_11_SYSTEM_CTRL2, 0x20);
+		regmap_write(sma1305->regmap, SMA1305_11_SYSTEM_CTRL2, 0x00);
 		regmap_write(sma1305->regmap, SMA1305_22_COMP_HYS_SEL, 0x00);
 		regmap_write(sma1305->regmap, SMA1305_23_COMPLIM1, 0x1F);
 		regmap_write(sma1305->regmap, SMA1305_24_COMPLIM2, 0x7A);
@@ -4388,7 +4388,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV021\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV022\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
