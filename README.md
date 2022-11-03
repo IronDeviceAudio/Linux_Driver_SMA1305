@@ -54,3 +54,5 @@ REV020: Check whether the first i2c communication is possible.
 REV021: Change to using exception handling and enum values.
 
 REV022: Added Read/Write interface between Kernel and ABOX(Exynos Audio DSP) using ERAP IPC communication.
+
+REV023: Apply 6W boost mode optimization value.
