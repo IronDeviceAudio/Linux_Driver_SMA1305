@@ -17,7 +17,9 @@
 #define SMA_GET_PARAM		1
 #define SMA_SET_PARAM		0
 
-#define SMA_APS_TEMP_STAT   1000
+#define SMA_APS_TEMP_STAT      1000
+#define SMA_APS_TEMP_CURR      1001
+#define SMA_APS_SURFACE_TEMP   1002
 
 #define MAX_CHANNELS    2
 #define LEFT			0
