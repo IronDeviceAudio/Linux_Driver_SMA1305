@@ -12,6 +12,7 @@
 #include <sound/soc.h>
 #include <sound/samsung/sec_audio_sysfs.h>
 #include "bigdata_sma_sysfs_cb.h"
+#include "sma1305.h"
 #include <sound/ff_prot_spk.h>
 
 static struct snd_soc_component *sma1305_component;
@@ -92,4 +93,4 @@ void register_sma1305_bigdata_cb(struct snd_soc_component *component)
 	audio_register_curr_temperature_cb(get_sma1305_amp_curr_temperature);
 	audio_register_surface_temperature_cb(set_sma1305_amp_surface_temperature);
 }
-EXPORT_SYMBOL_GPL(register_sma1305_bigdata_cb);
+EXPORT_SYMBOL(register_sma1305_bigdata_cb);

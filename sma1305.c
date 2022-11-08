@@ -31,7 +31,7 @@
 #include <linux/interrupt.h>
 #include <linux/of_gpio.h>
 #include <linux/power_supply.h>
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 #include <sound/ff_prot_spk.h>
 #endif
 
@@ -153,9 +153,6 @@ static struct snd_soc_component *sma1305_amp_component;
 static int sma1305_startup(struct snd_soc_component *);
 static int sma1305_shutdown(struct snd_soc_component *);
 static int sma1305_spk_rcv_conf(struct snd_soc_component *);
-
-sma_send_msg_t ff_prot_dsp_write;
-sma_read_msg_t ff_prot_dsp_read;
 
 /* Initial register value - 4W SPK 2020.09.25 */
 static const struct reg_default sma1305_reg_def[] = {
@@ -3055,7 +3052,7 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 
 	regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_MUTE);
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 	sma_amp_update_big_data();
 #endif
 
@@ -3191,10 +3188,10 @@ SND_SOC_DAPM_INPUT("SDO"),
 };
 
 static const struct snd_soc_dapm_route sma1305_audio_map[] = {
-/* sink, control, source */
-{"DAC", NULL, "CLK_SUPPLY"},
-{"SPK", NULL, "DAC"},
-{"DAC_FEEDBACK", NULL, "SDO"},
+	/* sink, control, source */
+	{"DAC", NULL, "CLK_SUPPLY"},
+	{"SPK", NULL, "DAC"},
+	{"DAC_FEEDBACK", NULL, "SDO"},
 };
 
 static int sma1305_setup_pll(struct snd_soc_component *component,
@@ -3853,54 +3850,6 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 	mutex_unlock(&sma1305->lock);
 }
 
-#ifdef CONFIG_SND_SOC_APS_ALGO
-static int afe_ff_prot_get_set(int *user_data, uint32_t param_id,
-		uint8_t get_set, uint32_t length)
-{
-	int ret = 0;
-	struct ff_prot_spk_data resp_data;
-
-	switch (get_set) {
-	case SMA_SET_PARAM:
-		ret = ff_prot_dsp_write((void *)user_data, param_id, length);
-		break;
-	case SMA_GET_PARAM:
-		memset(&resp_data, 0, sizeof(resp_data));
-
-		ret = ff_prot_dsp_read((void *)&resp_data, param_id, length);
-
-		memcpy(user_data, resp_data.payload, length);
-		break;
-	}
-
-	return ret;
-}
-
-int sma_ext_register(sma_send_msg_t sma_send_msg,
-		sma_read_msg_t sma_read_msg)
-{
-	ff_prot_dsp_write = sma_send_msg;
-	ff_prot_dsp_read = sma_read_msg;
-
-	return 0;
-}
-EXPORT_SYMBOL(sma_ext_register);
-
-/* Wrapper around set/get parameter,
- * all set/get commands pass through this Wrapper
- */
-int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
-		uint8_t get_set, uint32_t length)
-{
-	int ret = 0;
-
-	ret = afe_ff_prot_get_set(user_data, param_id, get_set, length);
-
-	return ret;
-}
-EXPORT_SYMBOL(afe_ff_prot_algo_ctrl);
-#endif
-
 static void sma1305_check_amb_temp_worker(struct work_struct *work)
 {
 	struct sma1305_priv *sma1305 =
@@ -3995,9 +3944,9 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 				 */
 			}
 		}
-//	dev_info(sma1305->dev, "%s : ambient temperature %d\n",
-//			__func__, data);
-#ifdef CONFIG_SND_SOC_APS_ALGO
+		dev_info(sma1305->dev, "%s : ambient temperature %d\n",
+				__func__, data);
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 		afe_ff_prot_algo_ctrl(&data_dec, 0,
 					SMA_SET_PARAM, sizeof(int));
 #endif
@@ -4009,7 +3958,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	}
 }
 
-#ifdef CONFIG_PM
+#if IS_ENABLED(CONFIG_PM)
 static int sma1305_suspend(struct snd_soc_component *component)
 {
 	dev_info(component->dev, "%s\n", __func__);
@@ -4121,7 +4070,7 @@ int get_sma_amp_component(struct snd_soc_component **component)
 }
 EXPORT_SYMBOL(get_sma_amp_component);
 
-#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
+#if IS_ENABLED(CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS)
 int sma1305_reinit(struct snd_soc_component *component)
 {
 	sma1305_reset(component);

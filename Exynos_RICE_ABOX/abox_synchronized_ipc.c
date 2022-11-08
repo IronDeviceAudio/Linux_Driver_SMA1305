@@ -177,7 +177,7 @@ int ff_prot_spk_read(void *prm_data, int offset, int size)
 
 	msg.ipcid = IPC_ERAP;
 	erap_msg->msgtype = REALTIME_EXTRA;
-	erap_msg->param.raw.params[0] = IRON_DEVICE_VENDOR_ID;
+	erap_msg->param.raw.params[0] = VENDOR_IRONDEVICE_ID;
 	erap_msg->param.raw.params[1] = RD_DATA;
 	erap_msg->param.raw.params[2] = offset;
 	erap_msg->param.raw.params[3] = size;
@@ -221,7 +221,7 @@ int ff_prot_spk_write(void *prm_data, int offset, int size)
 
 	msg.ipcid = IPC_ERAP;
 	erap_msg->msgtype = REALTIME_EXTRA;
-	erap_msg->param.raw.params[0] = IRON_DEVICE_VENDOR_ID;
+	erap_msg->param.raw.params[0] = VENDOR_IRONDEVICE_ID;
 	erap_msg->param.raw.params[1] = WR_DATA;
 	erap_msg->param.raw.params[2] = offset;
 	erap_msg->param.raw.params[3] = size;
@@ -270,7 +270,7 @@ static irqreturn_t abox_synchronized_ipc_handler(int irq,
 	switch (erap_msg->msgtype) {
 	case REALTIME_EXTRA:
 #ifdef FF_PROT_SPK
-			if(erap_msg->param.raw.params[0] == IRON_DEVICE_VENDOR_ID) {
+			if(erap_msg->param.raw.params[0] == VENDOR_IRONDEVICE_ID) {
 				if(erap_msg->param.raw.params[1] == RD_DATA) {
 					memcpy(&ff_prot_spk_rd_data_tmp.payload[0], &erap_msg->param.raw.params[4],
 						min(sizeof(struct ff_prot_spk_data), sizeof(erap_msg->param.raw)));

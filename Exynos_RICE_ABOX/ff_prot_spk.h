@@ -11,7 +11,7 @@
 #define FF_PROT_SPK
 
 /* Below should be same as in aDSP code */
-#define IRON_DEVICE_VENDOR_ID	8282
+#define VENDOR_IRONDEVICE_ID	8282
 
 #define SMA_PAYLOAD_SIZE    14
 #define SMA_GET_PARAM		1
@@ -38,7 +38,7 @@ typedef int (*sma_send_msg_t)(void *prm_data, int offset, int size);
 typedef int (*sma_read_msg_t)(void *prm_data, int offset, int size);
 int sma_ext_register(sma_send_msg_t sma_send_msg, sma_send_msg_t sma_read_msg);
 
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 void sma_amp_update_big_data(void);
 #endif
 

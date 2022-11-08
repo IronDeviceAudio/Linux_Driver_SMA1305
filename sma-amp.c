@@ -22,19 +22,23 @@
 #define MONO_SPK			1
 #define STEREO_SPK			2
 
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 struct big_data {
 	uint32_t temp_max;
 	uint32_t temp_max_persist;
 	uint32_t temp_over_count;
 };
+
+sma_send_msg_t ff_prot_dsp_write;
+sma_read_msg_t ff_prot_dsp_read;
+
 #endif
 
 struct sma_amp_t {
 	struct class *class;
 	struct device *dev;
 	struct mutex lock;
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 	struct big_data b_data[MAX_CHANNELS];
 #endif
 	uint8_t spk_count;
@@ -42,7 +46,59 @@ struct sma_amp_t {
 
 static struct sma_amp_t *sma_amp;
 
-#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
+static int afe_ff_prot_get_set(int *user_data, uint32_t param_id,
+		uint8_t get_set, uint32_t length)
+{
+	int ret = 0;
+	struct ff_prot_spk_data resp_data;
+
+	switch (get_set) {
+	case SMA_SET_PARAM:
+		pr_info("sma1305 %s: SET_PARAM param_id %d, length %d\n",
+			__func__, param_id, length);
+		ret = ff_prot_dsp_write((void *)user_data, param_id, length);
+		break;
+	case SMA_GET_PARAM:
+		pr_info("sma1305 %s: GET_PARAM param_id %d, length %d\n",
+			__func__, param_id, length);
+		memset(&resp_data, 0, sizeof(resp_data));
+
+		ret = ff_prot_dsp_read((void *)&resp_data, param_id, length);
+
+		memcpy(user_data, resp_data.payload, length);
+		break;
+	}
+
+	return ret;
+}
+
+int sma_ext_register(sma_send_msg_t sma_send_msg,
+		sma_read_msg_t sma_read_msg)
+{
+	ff_prot_dsp_write = sma_send_msg;
+	ff_prot_dsp_read = sma_read_msg;
+
+	return 0;
+}
+EXPORT_SYMBOL(sma_ext_register);
+
+/* Wrapper around set/get parameter,
+ * all set/get commands pass through this Wrapper
+ */
+int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
+		uint8_t get_set, uint32_t length)
+{
+	int ret = 0;
+
+	ret = afe_ff_prot_get_set(user_data, param_id, get_set, length);
+
+	return ret;
+}
+EXPORT_SYMBOL(afe_ff_prot_algo_ctrl);
+#endif
+
+#if  IS_ENABLED(CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS)
 static ssize_t reinit_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
 {
@@ -84,7 +140,7 @@ static DEVICE_ATTR_RW(reinit);
 #endif
 
 /* BigData Related Codes Start */
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 void sma_amp_update_big_data(void)
 {
 	uint8_t iter = 0;
@@ -206,10 +262,10 @@ static DEVICE_ATTR_RO(temp_over_count_r);
 /* BigData Related Codes End */
 
 static struct attribute *sma_amp_attr[] = {
-#ifdef CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS
+#if IS_ENABLED(CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS)
 	&dev_attr_reinit.attr,
 #endif
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 	&dev_attr_temp_max.attr,
 	&dev_attr_temp_max_persist.attr,
 	&dev_attr_temp_over_count.attr,
@@ -217,7 +273,7 @@ static struct attribute *sma_amp_attr[] = {
 };
 
 static struct attribute *sma_amp_attr_r[] = {
-#ifdef CONFIG_SND_SOC_APS_ALGO
+#if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 	&dev_attr_temp_max_r.attr,
 	&dev_attr_temp_max_persist_r.attr,
 	&dev_attr_temp_over_count_r.attr,
