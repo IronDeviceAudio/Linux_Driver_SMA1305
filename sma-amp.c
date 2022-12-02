@@ -37,7 +37,8 @@ sma_read_msg_t ff_prot_dsp_read;
 struct sma_amp_t {
 	struct class *class;
 	struct device *dev;
-	struct mutex lock;
+	struct mutex reinit_lock;
+	struct mutex dsp_msg_lock;
 #if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 	struct big_data b_data[MAX_CHANNELS];
 #endif
@@ -57,16 +58,20 @@ static int afe_ff_prot_get_set(int *user_data, uint32_t param_id,
 	case SMA_SET_PARAM:
 		pr_info("sma1305 %s: SET_PARAM param_id %d, length %d\n",
 			__func__, param_id, length);
+		mutex_lock(&sma_amp->dsp_msg_lock);
 		ret = ff_prot_dsp_write((void *)user_data, param_id, length);
+		mutex_unlock(&sma_amp->dsp_msg_lock);
 		break;
 	case SMA_GET_PARAM:
 		pr_info("sma1305 %s: GET_PARAM param_id %d, length %d\n",
 			__func__, param_id, length);
+		mutex_lock(&sma_amp->dsp_msg_lock);
 		memset(&resp_data, 0, sizeof(resp_data));
 
 		ret = ff_prot_dsp_read((void *)&resp_data, param_id, length);
 
 		memcpy(user_data, resp_data.payload, length);
+		mutex_unlock(&sma_amp->dsp_msg_lock);
 		break;
 	}
 
@@ -116,7 +121,7 @@ static ssize_t reinit_store(struct device *dev,
 	if (ret)
 		return (ssize_t)count;
 
-	mutex_lock(&sma_amp->lock);
+	mutex_lock(&sma_amp->reinit_lock);
 
 	if (sma_amp) {
 		get_sma_amp_component(&amp_component);
@@ -131,7 +136,7 @@ static ssize_t reinit_store(struct device *dev,
 	} else
 		dev_err(dev, "sma-amp is not configured\n");
 
-	mutex_unlock(&sma_amp->lock);
+	mutex_unlock(&sma_amp->reinit_lock);
 
 	return (ssize_t)count;
 }
@@ -333,7 +338,8 @@ static int sma_amp_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	mutex_init(&sma_amp->lock);
+	mutex_init(&sma_amp->reinit_lock);
+	mutex_init(&sma_amp->dsp_msg_lock);
 	sma_amp->spk_count = MONO_SPK;
 
 	return ret;

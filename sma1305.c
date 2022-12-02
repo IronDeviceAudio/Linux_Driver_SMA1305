@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r023, 2022.11.03	- initial version  sma1305
+ * r024, 2022.12.02	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -151,7 +151,7 @@ PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
 static struct snd_soc_component *sma1305_amp_component;
 
 static int sma1305_startup(struct snd_soc_component *);
-static int sma1305_shutdown(struct snd_soc_component *);
+static int sma1305_shutdown(struct snd_soc_component *, bool state);
 static int sma1305_spk_rcv_conf(struct snd_soc_component *);
 
 /* Initial register value - 4W SPK 2020.09.25 */
@@ -385,7 +385,7 @@ static int power_up_down_control_put(struct snd_kcontrol *kcontrol,
 	if (sel && !(sma1305->force_amp_power_down))
 		sma1305_startup(component);
 	else
-		sma1305_shutdown(component);
+		sma1305_shutdown(component, true);
 
 	return 0;
 }
@@ -413,7 +413,7 @@ static int power_down_control_put(struct snd_kcontrol *kcontrol,
 
 	if (sma1305->force_amp_power_down) {
 		dev_info(component->dev, "%s\n", "Force AMP Power Down");
-		sma1305_shutdown(component);
+		sma1305_shutdown(component, true);
 	}
 
 	return 0;
@@ -3033,7 +3033,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 	return 0;
 }
 
-static int sma1305_shutdown(struct snd_soc_component *component)
+static int sma1305_shutdown(struct snd_soc_component *component, bool state)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
@@ -3053,7 +3053,8 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 	regmap_update_bits(sma1305->regmap, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_MUTE);
 #if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
-	sma_amp_update_big_data();
+	if (state)
+		sma_amp_update_big_data();
 #endif
 
 	/* To improve the Boost OCP issue,
@@ -3266,7 +3267,7 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 
 			if (sma1305->last_bclk != bclk) {
 				if (sma1305->amp_power_status) {
-					sma1305_shutdown(component);
+					sma1305_shutdown(component, false);
 					sma1305_setup_pll(component, bclk);
 					sma1305_startup(component);
 				} else
@@ -3508,14 +3509,14 @@ static void sma1305_dai_shutdown(struct snd_pcm_substream *substream,
 		dev_info(component->dev,
 				"%s : stream = PLAYBACK\n", __func__);
 		if (sma1305->capture_status == false)
-			sma1305_shutdown(component);
+			sma1305_shutdown(component, true);
 		sma1305->playback_status = false;
 		break;
 	case SNDRV_PCM_STREAM_CAPTURE:
 		dev_info(component->dev,
 				"%s : stream = CAPTURE\n", __func__);
 		if (sma1305->playback_status == false)
-			sma1305_shutdown(component);
+			sma1305_shutdown(component, true);
 		sma1305->capture_status = false;
 		break;
 	}
@@ -3732,7 +3733,7 @@ static int sma1305_set_bias_level(struct snd_soc_component *component,
 	case SND_SOC_BIAS_OFF:
 
 		dev_info(component->dev, "%s\n", "SND_SOC_BIAS_OFF");
-		sma1305_shutdown(component);
+		sma1305_shutdown(component, true);
 
 		break;
 	}
@@ -4330,7 +4331,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV023\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV024\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
