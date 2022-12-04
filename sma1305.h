@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r023, 2022.11.03
+ * r025, 2022.12.05
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -20,6 +20,8 @@ int sma1305_reinit(struct snd_soc_component *component);
 #endif
 
 int get_sma_amp_component(struct snd_soc_component **component);
+bool get_amp_pwr_status(void);
+
 int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
 		uint8_t get_set, uint32_t length);
 

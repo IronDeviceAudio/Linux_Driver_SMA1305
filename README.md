@@ -58,3 +58,5 @@ REV022: Added Read/Write interface between Kernel and ABOX(Exynos Audio DSP) usi
 REV023: Apply 6W boost mode optimization value.
 
 REV024: Fixed ABOX message handling kernel panic issue.
+
+REV025: Apply exception handling for surface temperature.

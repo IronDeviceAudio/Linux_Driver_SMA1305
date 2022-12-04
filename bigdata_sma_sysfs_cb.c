@@ -74,9 +74,14 @@ static int set_sma1305_amp_surface_temperature(enum amp_id id, int temperature)
 		return -EINVAL;
 	}
 
-	param_id = (SMA_APS_SURFACE_TEMP)|((iter+1)<<24);
-	ret = afe_ff_prot_algo_ctrl(&surface_temp, param_id,
-			SMA_SET_PARAM, sizeof(int));
+	if (get_amp_pwr_status()) {
+		param_id = (SMA_APS_SURFACE_TEMP)|((iter+1)<<24);
+		ret = afe_ff_prot_algo_ctrl(&surface_temp, param_id,
+				SMA_SET_PARAM, sizeof(int));
+	} else {
+		return -EINVAL;
+	}
+
 	if (ret < 0) {
 		pr_err("[%s] Failed to get Current Temperature",
 				__func__);
