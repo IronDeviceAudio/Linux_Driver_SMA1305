@@ -60,3 +60,6 @@ REV023: Apply 6W boost mode optimization value.
 REV024: Fixed ABOX message handling kernel panic issue.
 
 REV025: Apply exception handling for surface temperature.
+
+REV026: Register a callback function to deliver an error value.
+        Protect the AMP power status value using a mutex.

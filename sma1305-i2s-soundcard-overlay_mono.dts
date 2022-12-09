@@ -59,6 +59,7 @@
 				 */
 				spk-rcv-mode = <1>;
 				sys-clk-id = <0x03>;
+				i2c-retry-count = <3>;
 				status = "okay";
 			};
 		};

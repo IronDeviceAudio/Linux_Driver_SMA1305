@@ -83,7 +83,7 @@ static int set_sma1305_amp_surface_temperature(enum amp_id id, int temperature)
 	}
 
 	if (ret < 0) {
-		pr_err("[%s] Failed to get Current Temperature",
+		pr_err("[%s] Failed to set Surface Temperature",
 				__func__);
 	}
 

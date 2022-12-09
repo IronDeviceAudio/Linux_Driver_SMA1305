@@ -75,6 +75,7 @@
 				 */
 				sma1305,gpio-int= <&gpio 4 0>;
 				sys-clk-id = <0x03>;
+				i2c-retry-count = <3>;
 				qdsp-port-id = <0x1006>; /* AFE_PORT_ID_QUATERNARY_MI2S_RX */
 				/* temp-gain-table = <0xF1 0x36 1>,<0xFB 0x35 0>,
 						  <0xFF 0x34 0>,<0x05 0x33 0>,
