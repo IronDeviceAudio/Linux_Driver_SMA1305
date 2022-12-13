@@ -63,3 +63,6 @@ REV025: Apply exception handling for surface temperature.
 
 REV026: Register a callback function to deliver an error value.
         Protect the AMP power status value using a mutex.
+
+REV027: Reflect the static analysis tool result.
+        Apply exception handling for power status mutex.

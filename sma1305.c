@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r026, 2022.12.08	- initial version  sma1305
+ * r027, 2022.12.13	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -140,15 +140,15 @@ struct sma1305_priv {
 };
 
 static struct sma1305_pll_match sma1305_pll_matches[] = {
-/* in_clk_name, out_clk_name, input_clk post_n, n, vco, p_cp */
-PLL_MATCH("1.411MHz",  "24.554MHz", 1411200,  0x06, 0xD1, 0x88, 0x00),
-PLL_MATCH("1.536MHz",  "24.576MHz", 1536000,  0x06, 0xC0, 0x88, 0x00),
-PLL_MATCH("2.822MHz",  "24.554MHz", 2822400,  0x06, 0xD1, 0x88, 0x04),
-PLL_MATCH("3.072MHz",  "24.576MHz", 3072000,  0x06, 0x60, 0x88, 0x00),
-PLL_MATCH("6.144MHz",  "24.576MHz", 6144000,  0x06, 0x60, 0x88, 0x04),
-PLL_MATCH("12.288MHz", "24.576MHz", 12288000, 0x06, 0x60, 0x88, 0x08),
-PLL_MATCH("19.2MHz",   "24.48MHz", 19200000, 0x06, 0x7B, 0x88, 0x0C),
-PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
+	/* in_clk_name, out_clk_name, input_clk post_n, n, vco, p_cp */
+	PLL_MATCH("1.411MHz",  "24.554MHz", 1411200,  0x06, 0xD1, 0x88, 0x00),
+	PLL_MATCH("1.536MHz",  "24.576MHz", 1536000,  0x06, 0xC0, 0x88, 0x00),
+	PLL_MATCH("2.822MHz",  "24.554MHz", 2822400,  0x06, 0xD1, 0x88, 0x04),
+	PLL_MATCH("3.072MHz",  "24.576MHz", 3072000,  0x06, 0x60, 0x88, 0x00),
+	PLL_MATCH("6.144MHz",  "24.576MHz", 6144000,  0x06, 0x60, 0x88, 0x04),
+	PLL_MATCH("12.288MHz", "24.576MHz", 12288000, 0x06, 0x60, 0x88, 0x08),
+	PLL_MATCH("19.2MHz",   "24.48MHz", 19200000, 0x06, 0x7B, 0x88, 0x0C),
+	PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
 };
 
 static struct snd_soc_component *sma1305_amp_component;
@@ -3068,20 +3068,15 @@ static int sma1305_startup(struct snd_soc_component *component)
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	mutex_lock(&sma1305->pwr_lock);
+
 	if (sma1305->amp_power_status) {
 		dev_info(component->dev, "%s : %s\n",
 			__func__, "Already AMP Power on");
+		mutex_unlock(&sma1305->pwr_lock);
 		return 0;
 	}
 
 	dev_info(component->dev, "%s\n", __func__);
-
-	if (sma1305->check_amb_temp_status) {
-		cancel_delayed_work(&sma1305->check_amb_temp_work);
-		queue_delayed_work(system_freezable_wq,
-			&sma1305->check_amb_temp_work,
-			msecs_to_jiffies(sma1305->dsp_prepare_time));
-	}
 
 	sma1305_regmap_update_bits(sma1305, SMA1305_A2_TOP_MAN1,
 			PLL_MASK, PLL_ON);
@@ -3091,11 +3086,21 @@ static int sma1305_startup(struct snd_soc_component *component)
 
 	sma1305_regmap_update_bits(sma1305, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_ON);
+
 	if ((sma1305->force_mute) == false)
 		sma1305_regmap_update_bits(sma1305, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_UNMUTE);
 
 	sma1305->amp_power_status = true;
+
+	mutex_unlock(&sma1305->pwr_lock);
+
+	if (sma1305->check_amb_temp_status) {
+		cancel_delayed_work(&sma1305->check_amb_temp_work);
+		queue_delayed_work(system_freezable_wq,
+			&sma1305->check_amb_temp_work,
+			msecs_to_jiffies(sma1305->dsp_prepare_time));
+	}
 
 	sma1305_regmap_update_bits(sma1305, SMA1305_93_INT_CTRL,
 				DIS_INT_MASK, NORMAL_INT);
@@ -3108,7 +3113,7 @@ static int sma1305_startup(struct snd_soc_component *component)
 		sma1305_regmap_update_bits(sma1305, SMA1305_93_INT_CTRL,
 				SEL_INT_MASK, INT_CLEAR_MANUAL);
 	}
-	mutex_unlock(&sma1305->pwr_lock);
+
 	return 0;
 }
 
@@ -3117,9 +3122,11 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	mutex_lock(&sma1305->pwr_lock);
+
 	if (!(sma1305->amp_power_status)) {
 		dev_info(component->dev, "%s : %s\n",
 			__func__, "Already AMP Shutdown");
+		mutex_unlock(&sma1305->pwr_lock);
 		return 0;
 	}
 
@@ -3145,10 +3152,12 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 	sma1305_regmap_update_bits(sma1305, SMA1305_00_SYSTEM_CTRL,
 			POWER_MASK, POWER_OFF);
 
+	sma1305->amp_power_status = false;
+
+	mutex_unlock(&sma1305->pwr_lock);
+
 	sma1305_regmap_update_bits(sma1305, SMA1305_A2_TOP_MAN1,
 			PLL_MASK, PLL_OFF);
-
-	sma1305->amp_power_status = false;
 
 	sma1305_regmap_update_bits(sma1305, SMA1305_93_INT_CTRL,
 			SEL_INT_MASK, INT_CLEAR_AUTO);
@@ -3156,7 +3165,6 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 			DIS_INT_MASK, HIGH_Z_INT);
 
 	cancel_delayed_work(&sma1305->check_amb_temp_work);
-	mutex_unlock(&sma1305->pwr_lock);
 
 	return 0;
 }
@@ -3935,7 +3943,7 @@ static void sma1305_check_fault_worker(struct work_struct *work)
 		dev_crit(sma1305->dev,
 			"%s : OCP_BST(Over Current Protect Boost)\n", __func__);
 	}
-	if ((status2_val & CLK_MON_STATUS) && (sma1305->amp_power_status)) {
+	if (status2_val & CLK_MON_STATUS) {
 		if (gCallback.set_irq_err)
 			gCallback.set_irq_err(sma1305->dev, SMA1305_FAULT_CLK);
 		dev_crit(sma1305->dev,
@@ -4169,8 +4177,13 @@ bool get_amp_pwr_status(void)
 {
 	struct sma1305_priv *sma1305 =
 		snd_soc_component_get_drvdata(sma1305_amp_component);
+	bool power_status;
 
-	return sma1305->amp_power_status;
+	mutex_lock(&sma1305->pwr_lock);
+	power_status = sma1305->amp_power_status;
+	mutex_unlock(&sma1305->pwr_lock);
+
+	return power_status;
 }
 EXPORT_SYMBOL(get_amp_pwr_status);
 
@@ -4434,7 +4447,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV026\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV027\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4469,12 +4482,22 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			sma1305->init_vol = 0x32;
 		}
 		if (!of_property_read_u32(np, "i2c-retry-count", &value)) {
-			sma1305->retry_cnt = value;
-			dev_info(&client->dev,
-				"I2C retry count = %d\n", value);
+			if (value > 50 || value < 0) {
+				sma1305->retry_cnt = SMA1305_I2C_RETRY_COUNT;
+				dev_info(&client->dev,
+					"i2c-retry-count out of range\n");
+				dev_info(&client->dev,
+					"Set default = %d\n",
+						SMA1305_I2C_RETRY_COUNT);
+			} else {
+				sma1305->retry_cnt = value;
+				dev_info(&client->dev,
+					"I2C retry count = %d\n", value);
+			}
 		} else {
 			dev_info(&client->dev,
-				"I2C retry count = 5\n");
+				"I2C retry count = %d\n",
+					SMA1305_I2C_RETRY_COUNT);
 			sma1305->retry_cnt = SMA1305_I2C_RETRY_COUNT;
 		}
 		if (of_property_read_bool(np, "stereo-two-chip")) {

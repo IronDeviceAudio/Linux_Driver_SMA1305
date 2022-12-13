@@ -103,7 +103,7 @@ int afe_ff_prot_algo_ctrl(int *user_data, uint32_t param_id,
 EXPORT_SYMBOL(afe_ff_prot_algo_ctrl);
 #endif
 
-#if  IS_ENABLED(CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS)
+#if IS_ENABLED(CONFIG_SMA1305_FACTORY_RECOVERY_SYSFS)
 static ssize_t reinit_show(struct device *dev,
 	struct device_attribute *devattr, char *buf)
 {
@@ -121,9 +121,8 @@ static ssize_t reinit_store(struct device *dev,
 	if (ret)
 		return (ssize_t)count;
 
-	mutex_lock(&sma_amp->reinit_lock);
-
 	if (sma_amp) {
+		mutex_lock(&sma_amp->reinit_lock);
 		get_sma_amp_component(&amp_component);
 		if (amp_component) {
 			if (reinit == 1) {
@@ -133,10 +132,10 @@ static ssize_t reinit_store(struct device *dev,
 			}
 		} else
 			dev_err(dev, "sma-amp component is not configured\n");
+
+		mutex_unlock(&sma_amp->reinit_lock);
 	} else
 		dev_err(dev, "sma-amp is not configured\n");
-
-	mutex_unlock(&sma_amp->reinit_lock);
 
 	return (ssize_t)count;
 }
@@ -156,6 +155,7 @@ void sma_amp_update_big_data(void)
 	if (!sma_amp) {
 		pr_err("[ID-APS:%s] memory not allocated yet for sma_amp",
 			__func__);
+		return;
 	}
 
 	for (iter = 0; iter < sma_amp->spk_count; iter++) {
@@ -190,10 +190,12 @@ static ssize_t temp_max_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_max);
-	sma_amp->b_data[0].temp_max = 0;
+	if (!sma_amp) {
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_max);
+		sma_amp->b_data[0].temp_max = 0;
+	}
 
 	return ret;
 }
@@ -202,9 +204,10 @@ static ssize_t temp_max_persist_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_max_persist);
+	if (!sma_amp)
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_max_persist);
 
 	return ret;
 }
@@ -213,10 +216,12 @@ static ssize_t temp_over_count_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_over_count);
-	sma_amp->b_data[0].temp_over_count = 0;
+	if (!sma_amp) {
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[0].temp_over_count);
+		sma_amp->b_data[0].temp_over_count = 0;
+	}
 
 	return ret;
 }
@@ -225,10 +230,12 @@ static ssize_t temp_max_r_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_max);
-	sma_amp->b_data[1].temp_max = 0;
+	if (!sma_amp) {
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_max);
+		sma_amp->b_data[1].temp_max = 0;
+	}
 
 	return ret;
 }
@@ -237,9 +244,10 @@ static ssize_t temp_max_persist_r_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_max_persist);
+	if (!sma_amp)
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_max_persist);
 
 	return ret;
 }
@@ -248,10 +256,12 @@ static ssize_t temp_over_count_r_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	ssize_t ret;
+	ssize_t ret = 0;
 
-	ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_over_count);
-	sma_amp->b_data[1].temp_over_count = 0;
+	if (!sma_amp) {
+		ret = sprintf(buf, "%d\n", sma_amp->b_data[1].temp_over_count);
+		sma_amp->b_data[1].temp_over_count = 0;
+	}
 
 	return ret;
 }
@@ -309,17 +319,16 @@ static int sma_amp_probe(struct platform_device *pdev)
 
 	sma_amp->class = class_create(THIS_MODULE,
 					SMA_AMP_CLASS_NAME);
-
 	if (IS_ERR(sma_amp->class)) {
 		dev_err(&pdev->dev, "Failed to register [%s] class\n",
 				SMA_AMP_CLASS_NAME);
+		kfree(sma_amp);
 		return -EINVAL;
 	}
 
 	/* Create sma sysfs attributes */
 	sma_amp->dev = device_create(sma_amp->class, NULL, 0, NULL,
 			SMA_AMP_DEV_NAME);
-
 	if (IS_ERR(sma_amp->dev)) {
 		dev_err(&pdev->dev, "Failed to create [%s] device\n",
 				SMA_AMP_DEV_NAME);
@@ -330,10 +339,11 @@ static int sma_amp_probe(struct platform_device *pdev)
 
 	ret = sysfs_create_group(&sma_amp->dev->kobj,
 			&sma_amp_attr_group);
-
 	if (ret) {
 		dev_err(&pdev->dev,
 			"failed to create sysfs group [%d]\n", ret);
+		device_destroy(sma_amp->class, 0);
+		class_destroy(sma_amp->class);
 		kfree(sma_amp);
 		return ret;
 	}
@@ -347,6 +357,8 @@ static int sma_amp_probe(struct platform_device *pdev)
 
 static int sma_amp_remove(struct platform_device *pdev)
 {
+	device_destroy(sma_amp->class, 0);
+	class_destroy(sma_amp->class);
 	kfree(sma_amp);
 
 	return 0;
