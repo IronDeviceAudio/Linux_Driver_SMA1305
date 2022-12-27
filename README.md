@@ -66,3 +66,5 @@ REV026: Register a callback function to deliver an error value.
 
 REV027: Reflect the static analysis tool result.
         Apply exception handling for power status mutex.
+
+REV028: Fixed Google STS test issue.
