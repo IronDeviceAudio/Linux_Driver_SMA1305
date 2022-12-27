@@ -54,3 +54,5 @@ REV020: Check whether the first i2c communication is possible.
 REV021: Change to using exception handling and enum values.
 
 REV022: Apply 6W boost mode optimization value.
+
+REV023: Fixed Google STS test issue.

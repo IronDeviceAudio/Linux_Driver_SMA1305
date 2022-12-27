@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r022, 2022.11.03	- initial version  sma1305
+ * r023, 2022.12.27	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -2424,7 +2424,14 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	sma1305->spk_rcv_mode = (unsigned int) ucontrol->value.integer.value[0];
+	if (ucontrol->value.integer.value[0] > 3 ||
+	    ucontrol->value.integer.value[0] < 0) {
+		dev_err(component->dev, "%s : %s\n",
+			__func__, "Set value out of range");
+		return -EINVAL;
+	}
+
+	sma1305->spk_rcv_mode = ucontrol->value.integer.value[0];
 
 	sma1305_spk_rcv_conf(component);
 
@@ -4388,7 +4395,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV022\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV023\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
