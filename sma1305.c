@@ -60,10 +60,12 @@ enum sma1305_type {
 };
 
 enum sma1305_mode {
+	SMA1305_MODE_NONE = 0,
 	SMA1305_SPEAKER_4W_MODE = 0,
 	SMA1305_SPEAKER_6W_MODE,
 	SMA1305_RECEIVER_0P1W_MODE,
-	SMA1305_RECEIVER_0P5W_MODE
+	SMA1305_RECEIVER_0P5W_MODE,
+	SMA1305_MODE_MAX
 };
 
 /* PLL clock setting Table */
@@ -2495,15 +2497,16 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 		snd_soc_kcontrol_component(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
+	int val = 0;
 
-	if (ucontrol->value.integer.value[0] > 3 ||
-	    ucontrol->value.integer.value[0] < 0) {
+	val = ucontrol->value.integer.value[0];
+	if (val < SMA1305_MODE_NONE || val >= SMA1305_MODE_MAX) {
 		dev_err(component->dev, "%s : %s\n",
 			__func__, "Set value out of range");
 		return -EINVAL;
 	}
 
-	sma1305->spk_rcv_mode = ucontrol->value.integer.value[0];
+	sma1305->spk_rcv_mode = val;
 
 	sma1305_spk_rcv_conf(component);
 
@@ -2859,9 +2862,6 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
-			speaker_receiver_mode_text[sma1305->spk_rcv_mode]);
-
 	switch (sma1305->spk_rcv_mode) {
 	case SMA1305_RECEIVER_0P1W_MODE:
 		/* SPK Volume : -1.0dB */
@@ -3066,6 +3066,9 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 					__func__, sma1305->spk_rcv_mode);
 		return -EINVAL;
 	}
+
+	dev_info(component->dev, "%s : [%s] Mode\n", __func__,
+			speaker_receiver_mode_text[sma1305->spk_rcv_mode]);
 
 	return 0;
 }
