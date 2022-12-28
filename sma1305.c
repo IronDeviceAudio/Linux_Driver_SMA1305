@@ -60,7 +60,6 @@ enum sma1305_type {
 };
 
 enum sma1305_mode {
-	SMA1305_MODE_NONE = 0,
 	SMA1305_SPEAKER_4W_MODE = 0,
 	SMA1305_SPEAKER_6W_MODE,
 	SMA1305_RECEIVER_0P1W_MODE,
@@ -336,7 +335,6 @@ static int sma1305_regmap_write(struct sma1305_priv *sma1305,
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
-		msleep(20);
 	}
 
 	return ret;
@@ -358,7 +356,6 @@ static int sma1305_regmap_update_bits(struct sma1305_priv *sma1305,
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
-		msleep(20);
 	}
 
 	return ret;
@@ -380,7 +377,6 @@ static int sma1305_regmap_read(struct sma1305_priv *sma1305,
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
-		msleep(20);
 	}
 
 	return ret;
@@ -2500,7 +2496,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 	int val = 0;
 
 	val = ucontrol->value.integer.value[0];
-	if (val < SMA1305_MODE_NONE || val >= SMA1305_MODE_MAX) {
+	if (val < 0 || val >= SMA1305_MODE_MAX) {
 		dev_err(component->dev, "%s : %s\n",
 			__func__, "Set value out of range");
 		return -EINVAL;
