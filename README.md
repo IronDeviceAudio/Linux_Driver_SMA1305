@@ -56,3 +56,5 @@ REV021: Change to using exception handling and enum values.
 REV022: Apply 6W boost mode optimization value.
 
 REV023: Fixed Google STS test issue.
+
+REV025: Additional SW Peak margin is secured in situations where VBAT is abnormal.
