@@ -68,3 +68,5 @@ REV027: Reflect the static analysis tool result.
         Apply exception handling for power status mutex.
 
 REV028: Fixed Google STS test issue.
+
+REV029: Apply the optimal AMP setting value that fits the HW PCB design(inductance) value.
