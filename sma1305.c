@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r029, 2023.08.22	- initial version  sma1305
+ * r030, 2023.11.03	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -4453,7 +4453,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV029\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV030\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4488,7 +4488,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			sma1305->init_vol = 0x32;
 		}
 		if (!of_property_read_u32(np, "i2c-retry-count", &value)) {
-			if (value > 50 || value < 0) {
+			if (value > 50) {
 				sma1305->retry_cnt = SMA1305_I2C_RETRY_COUNT;
 				dev_info(&client->dev,
 					"i2c-retry-count out of range\n");
@@ -4891,6 +4891,6 @@ module_init(sma1305_init);
 module_exit(sma1305_exit);
 
 MODULE_DESCRIPTION("ALSA SoC SMA1305 driver");
-MODULE_AUTHOR("Justin, <jeongjin.kim@siliconmitus.com>");
+MODULE_AUTHOR("GH Park, <gyuwha.park@irondevice.com>");
 MODULE_AUTHOR("KS Jo, <kiseok.jo@irondevice.com>");
 MODULE_LICENSE("GPL v2");

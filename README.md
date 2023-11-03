@@ -70,3 +70,5 @@ REV027: Reflect the static analysis tool result.
 REV028: Fixed Google STS test issue.
 
 REV029: Apply the optimal AMP setting value that fits the HW PCB design(inductance) value.
+
+REV030: Fixed unsigned_compare issue about static analysis.
