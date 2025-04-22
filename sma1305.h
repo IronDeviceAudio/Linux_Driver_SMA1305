@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r030, 2023.11.03
+ * r031, 2025.04.25
  *
- * Copyright 2020 Iron Device Corporation
+ * Copyright 2025 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -364,10 +364,13 @@ enum {
 
 /* OTP Trim SPK Offset */
 #define SPK_OFFS2_MSB_MASK	(1<<5)
-#define SPK_OFFS2_MASK		(31<<0)
+#define SPK_OFFS2_MSB_DEFAULT	(0<<5)
+#define SPK_OFFS2_MASK		(31)
+#define SPK_OFFS2_DEFAULT_VALUE	(0)
 
 /* OTP Trim RCV Offset */
 #define RCV_OFFS2_MSB_MASK	(1<<7)
+#define RCV_OFFS2_MSB_DEFAULT	(0<<7)
 #define RCV_OFFS2_MASK		(15<<4)
 #define RCV_OFFS2_DEFAULT_VALUE (0<<4)
 

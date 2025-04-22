@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r030, 2023.11.03	- initial version  sma1305
+ * r031, 2025.04.25	- initial version  sma1305
  *
- * Copyright 2020 Iron Device Corporation
+ * Copyright 2025 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -53,7 +53,7 @@
 	.vco			= _vco,\
 	.p_cp		= _p_cp,\
 }
-struct callback_ops gCallback;
+static struct callback_ops gCallback;
 
 enum sma1305_type {
 	SMA1305,
@@ -79,13 +79,12 @@ struct sma1305_pll_match {
 };
 
 struct sma1305_temp_gain_match {
-	uint32_t thermal_limit;
-	uint32_t gain_atten;
-	uint32_t activate;
+	__be32 thermal_limit;
+	__be32 gain_atten;
+	__be32 activate;
 };
 
 struct sma1305_priv {
-	enum sma1305_type devtype;
 	struct attribute_group *attr_grp;
 	struct kobject *kobj;
 	struct regmap *regmap;
@@ -396,10 +395,9 @@ static int bytes_ext_get(struct snd_kcontrol *kcontrol,
 	for (i = 0; i < params->max; i++) {
 		sma1305_regmap_read(sma1305, reg + i, &reg_val);
 		if (sizeof(reg_val) > 2)
-			reg_val = cpu_to_le32(reg_val);
+			val[i] = (__force u8)cpu_to_le32(reg_val);
 		else
-			reg_val = cpu_to_le16(reg_val);
-		memcpy(val + i, &reg_val, sizeof(u8));
+			val[i] = (__force u8)cpu_to_le16(reg_val);
 	}
 
 	return 0;
@@ -3024,7 +3022,10 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
 		/* OCP Level Time 2.0A */
 		sma1305_regmap_write(sma1305, SMA1305_34_OCP_SPK, 0x01);
-		sma1305_regmap_write(sma1305, SMA1305_99_OTP_TRM2, 0x00);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MSB_MASK, SPK_OFFS2_MSB_DEFAULT);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MASK, SPK_OFFS2_DEFAULT_VALUE);
 		/* Comp/Limiter Cotnrol */
 		sma1305_regmap_write(sma1305, SMA1305_11_SYSTEM_CTRL2, 0x00);
 		sma1305_regmap_write(sma1305, SMA1305_22_COMP_HYS_SEL, 0x00);
@@ -3981,9 +3982,9 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 				reg_val = (struct sma1305_temp_gain_match *)
 						&sma1305->temp_gain_array[cnt];
 
-				limit = be32_to_cpu(reg_val->thermal_limit);
-				gain = be32_to_cpu(reg_val->gain_atten);
-				active = be32_to_cpu(reg_val->activate);
+				limit = (int8_t)be32_to_cpu(reg_val->thermal_limit);
+				gain = (int8_t)be32_to_cpu(reg_val->gain_atten);
+				active = (int8_t)be32_to_cpu(reg_val->activate);
 
 				gain = gain + 2;
 
@@ -4429,7 +4430,7 @@ static const struct snd_soc_component_driver sma1305_component = {
 	.num_dapm_routes = ARRAY_SIZE(sma1305_audio_map),
 };
 
-const struct regmap_config sma_i2c_regmap = {
+static const struct regmap_config sma_i2c_regmap = {
 	.reg_bits = 8,
 	.val_bits = 8,
 
@@ -4443,8 +4444,7 @@ const struct regmap_config sma_i2c_regmap = {
 	.num_reg_defaults = ARRAY_SIZE(sma1305_reg_def),
 };
 
-static int sma1305_i2c_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+static int sma1305_i2c_probe(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305;
 	struct device_node *np = client->dev.of_node;
@@ -4453,7 +4453,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV030\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV031\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4743,7 +4743,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->fix_gain_count = 0;
 	sma1305->check_amb_temp_status = true;
 
-	sma1305->devtype = (enum sma1305_type) id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
 
@@ -4827,7 +4826,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	return ret;
 }
 
-static int sma1305_i2c_remove(struct i2c_client *client)
+static void sma1305_i2c_remove(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305 =
 		(struct sma1305_priv *) i2c_get_clientdata(client);
@@ -4844,8 +4843,6 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 
 		devm_kfree(&client->dev, sma1305);
 	}
-
-	return 0;
 }
 
 static const struct i2c_device_id sma1305_i2c_id[] = {
@@ -4855,7 +4852,7 @@ static const struct i2c_device_id sma1305_i2c_id[] = {
 MODULE_DEVICE_TABLE(i2c, sma1305_i2c_id);
 
 static const struct of_device_id sma1305_of_match[] = {
-	{ .compatible = "siliconmitus,sma1305", },
+	{ .compatible = "irondevice,sma1305", },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sma1305_of_match);
