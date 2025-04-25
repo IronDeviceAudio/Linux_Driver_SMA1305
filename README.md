@@ -58,3 +58,5 @@ REV022: Apply 6W boost mode optimization value.
 REV023: Fixed Google STS test issue.
 
 REV025: Additional SW Peak margin is secured in situations where VBAT is abnormal.
+
+REV026: Add 4.5W speaker mode.
