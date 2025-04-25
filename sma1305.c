@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r030, 2023.11.03	- initial version  sma1305
+ * r031, 2025.04.25	- initial version  sma1305
  *
- * Copyright 2020 Iron Device Corporation
+ * Copyright 2025 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -61,6 +61,7 @@ enum sma1305_type {
 
 enum sma1305_mode {
 	SMA1305_SPEAKER_4W_MODE = 0,
+	SMA1305_SPEAKER_4P5W_MODE,
 	SMA1305_SPEAKER_6W_MODE,
 	SMA1305_RECEIVER_0P1W_MODE,
 	SMA1305_RECEIVER_0P5W_MODE,
@@ -2469,7 +2470,7 @@ static int power_meter2_put(struct snd_kcontrol *kcontrol,
 }
 
 static const char * const speaker_receiver_mode_text[] = {
-	"Speaker(4.0W)", "Speaker(6.0W)", "Receiver(0.1W)", "Receiver(0.5W)"};
+	"Speaker(4.0W)", "Speaker(4.5W)", "Speaker(6.0W)", "Receiver(0.1W)", "Receiver(0.5W)"};
 
 static const struct soc_enum speaker_receiver_mode_enum =
 SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(speaker_receiver_mode_text),
@@ -2982,6 +2983,47 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		/* Release Time : 83.33us */
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
 		break;
+	case SMA1305_SPEAKER_4P5W_MODE:
+		/* SPK Volume : -0.5dB */
+		sma1305_regmap_write(sma1305, SMA1305_0A_SPK_VOL, 0x31);
+		/* Shoot Through Protection : Disable */
+		sma1305_regmap_write(sma1305, SMA1305_0B_BST_TEST, 0x50);
+		/* VBAT & Temperature Sensing On, LPF Activate */
+		sma1305_regmap_write(sma1305,
+				SMA1305_0F_VBAT_TEMP_SENSING, 0x08);
+		/* Delay On - 200us */
+		sma1305_regmap_write(sma1305, SMA1305_13_DELAY, 0x09);
+		/* HYSFB : 625kHz, BDELAY : 6'b010010 */
+		sma1305_regmap_write(sma1305, SMA1305_14_MODULATOR, 0x12);
+		/* Tone Generator(Volume - Off) & Fine volume Activate */
+		sma1305_regmap_write(sma1305, SMA1305_1E_TONE_GENERATOR, 0xA1);
+		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
+		sma1305_regmap_write(sma1305, SMA1305_24_COMPLIM2, 0x7A);
+		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
+		sma1305_regmap_write(sma1305, SMA1305_35_FDPEC_CTRL0, 0x16);
+		/* ENV_TRA, BOP_CTRL Enable */
+		sma1305_regmap_write(sma1305, SMA1305_3E_IDLE_MODE_CTRL, 0x01);
+		/* OTA GM : 20uA/V */
+		sma1305_regmap_write(sma1305, SMA1305_8F_ANALOG_TEST, 0x02);
+		/* FLT_VDD_GAIN : 3.15V */
+		sma1305_regmap_write(sma1305, SMA1305_92_FDPEC_CTRL1, 0xB0);
+		/* Switching Off Slew : 2.6ns, Switching Slew : 2.6ns,
+		 * Ramp Compensation : 7.0A/us
+		 */
+		sma1305_regmap_write(sma1305, SMA1305_94_BOOST_CTRL9, 0xA4);
+		/* High P-gain, OCL : 4.0A */
+		sma1305_regmap_write(sma1305, SMA1305_95_BOOST_CTRL10, 0x54);
+		/* Driver On Deadtime : 9.0ns, Driver Off Deadtime : 7.3ns */
+		sma1305_regmap_write(sma1305, SMA1305_96_BOOST_CTRL11, 0x57);
+		/* Min V : 5'b00101 (0.59V) */
+		sma1305_regmap_write(sma1305, SMA1305_A8_BOOST_CTRL1, 0x04);
+		/* HEAD_ROOM : 5'b01000 (1.327V) */
+		sma1305_regmap_write(sma1305, SMA1305_A9_BOOST_CTRL2, 0x29);
+		/* Boost Max : 5'b10001 (10.03V) */
+		sma1305_regmap_write(sma1305, SMA1305_AB_BOOST_CTRL4, 0x11);
+		/* Release Time : 83.33us */
+		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		break;
 	case SMA1305_SPEAKER_6W_MODE:
 		/* SPK Volume : -1.0dB */
 		sma1305_regmap_write(sma1305, SMA1305_0A_SPK_VOL, 0x32);
@@ -3024,7 +3066,10 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
 		/* OCP Level Time 2.0A */
 		sma1305_regmap_write(sma1305, SMA1305_34_OCP_SPK, 0x01);
-		sma1305_regmap_write(sma1305, SMA1305_99_OTP_TRM2, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MSB_MASK, SPK_OFFS2_MSB_DEFAULT);
+		sma1305_regmap_write(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MASK, SPK_OFFS2_DEFAULT_VALUE);
 		/* Comp/Limiter Cotnrol */
 		sma1305_regmap_write(sma1305, SMA1305_11_SYSTEM_CTRL2, 0x00);
 		sma1305_regmap_write(sma1305, SMA1305_22_COMP_HYS_SEL, 0x00);
@@ -4544,8 +4589,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 			sma1305->spk_rcv_mode = value;
 		} else {
 			dev_info(&client->dev,
-				"Default setting of amp power is '4W'\n");
-			sma1305->spk_rcv_mode = SMA1305_SPEAKER_4W_MODE;
+				"Default setting of amp power is '4.5W'\n");
+			sma1305->spk_rcv_mode = SMA1305_SPEAKER_4P5W_MODE;
 		}
 		if (!of_property_read_u32(np, "sys-clk-id", &value)) {
 			switch (value) {
@@ -4855,7 +4900,7 @@ static const struct i2c_device_id sma1305_i2c_id[] = {
 MODULE_DEVICE_TABLE(i2c, sma1305_i2c_id);
 
 static const struct of_device_id sma1305_of_match[] = {
-	{ .compatible = "siliconmitus,sma1305", },
+	{ .compatible = "irondevice,sma1305", },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sma1305_of_match);
