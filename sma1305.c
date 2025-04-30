@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r026, 2025.04.25	- initial version  sma1305
+ * r027, 2025.04.30	- initial version  sma1305
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -63,7 +63,6 @@ enum sma1305_type {
 };
 
 enum sma1305_mode {
-	SMA1305_MODE_NONE = 0,
 	SMA1305_SPEAKER_4W_MODE = 0,
 	SMA1305_SPEAKER_4P5W_MODE,
 	SMA1305_SPEAKER_6W_MODE,
@@ -111,7 +110,6 @@ struct sma1305_priv {
 	bool amp_power_status;
 	bool force_amp_power_down;
 	bool stereo_two_chip;
-	bool impossible_bst_ctrl;
 	long isr_manual_mode;
 	struct mutex lock;
 	struct mutex routing_lock;
@@ -2429,7 +2427,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 	int val = 0;
 
 	val = ucontrol->value.integer.value[0];
-	if (val < SMA1305_MODE_NONE || val >= SMA1305_MODE_MAX) {
+	if (val < 0 || val >= SMA1305_MODE_MAX) {
 		dev_err(component->dev, "%s : %s\n",
 			__func__, "Set value out of range");
 		return -EINVAL;
@@ -4443,7 +4441,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV025\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV027\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4474,8 +4472,8 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 				"init_vol is 0x%x from DT\n", value);
 		} else {
 			dev_info(&client->dev,
-				"init_vol is set with 0x32(-1.0dB)\n");
-			sma1305->init_vol = 0x32;
+				"init_vol is set with 0x32(-0.5dB)\n");
+			sma1305->init_vol = 0x31;
 		}
 		if (of_property_read_bool(np, "stereo-two-chip")) {
 			dev_info(&client->dev, "Stereo for two chip solution\n");
@@ -4483,13 +4481,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		} else {
 			dev_info(&client->dev, "Mono for one chip solution\n");
 				sma1305->stereo_two_chip = false;
-		}
-		if (of_property_read_bool(np, "impossible-bst-ctrl")) {
-			dev_info(&client->dev, "Boost control setting is not possible\n");
-				sma1305->impossible_bst_ctrl = true;
-		} else {
-			dev_info(&client->dev, "Boost control setting is possible\n");
-				sma1305->impossible_bst_ctrl = false;
 		}
 		if (!of_property_read_u32(np, "tdm-slot-rx", &value)) {
 			dev_info(&client->dev,

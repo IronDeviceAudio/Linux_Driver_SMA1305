@@ -60,3 +60,5 @@ REV023: Fixed Google STS test issue.
 REV025: Additional SW Peak margin is secured in situations where VBAT is abnormal.
 
 REV026: Add 4.5W speaker mode.
+
+REV027: Fixed remaining leftovers.
