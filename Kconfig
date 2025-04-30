@@ -6,9 +6,19 @@
 
 menu "CODEC drivers"
 
+config SND_SOC_ALL_CODECS
+	tristate "Build all ASoC CODEC drivers"
+	depends on COMPILE_TEST
+	imply SND_SOC_SMA1305
+
 config SND_SOC_SMA1305
-	tristate "Silicon Mitus SMA1305 Audio Amplifier"
+	tristate "Iron Device SMA1305 Audio Amplifier"
 	depends on I2C
+	help
+	  Enable support for Iron Device SMA1305 boosted digital speaker
+	  amplifier with feedback-loop.
+	  If you are using a system with an SMA1305 amplifier connected
+	  via I2C, enable this option.
 
 config SMA1305_FACTORY_RECOVERY_SYSFS
 	bool "Factory recovery sysfs"

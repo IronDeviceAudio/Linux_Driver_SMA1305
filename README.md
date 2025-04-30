@@ -74,3 +74,5 @@ REV029: Apply the optimal AMP setting value that fits the HW PCB design(inductan
 REV030: Fixed unsigned_compare issue about static analysis.
 
 REV031: Add 4.5W speaker mode.
+
+REV032: Fixed remaining leftovers.

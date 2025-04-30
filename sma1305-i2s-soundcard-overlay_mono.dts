@@ -1,8 +1,8 @@
 /*
- * Definitions for SMA1305 Amp
- * name : sma1305-i2s-soundcard-overlay.dts
+ * Example Device Tree Definitions for SMA1305 Audio Amplifier on Raspberry Pi
+ * name : sma1305-i2s-soundcard-overlay_mono.dts
  * Compile for dts
- * dtc -@ -I dts -O dtb -o sma1305-i2s-soundcard.dtbo sma1305-i2s-soundcard-overlay.dts
+ * dtc -@ -I dts -O dtb -o sma1305-i2s-soundcard.dtbo sma1305-i2s-soundcard-overlay_mono.dts
  * sudo cp sma1305-i2s-soundcard.dtbo /boot/overlays
  * adding dtoverlay sma1305-i2s-soundcard.dtbo in config.txt
  */
@@ -41,25 +41,29 @@
 
 			sma1305_amp: sma1305@1e {
 				#sound-dai-cells = <0>;
-
-				compatible = "siliconmitus,sma1305";
+				compatible = "irondevice,sma1305";
 				reg = <0x1e>;
-				init-vol = <0x32>;
+				init-vol = <0x31>;
 				//stereo-two-chip;
+				/* SPK_4.0W_MODE   : 0x00,
+				 * SPK_4.5W_MODE   : 0x01,
+				 * SPK_6.0W_MODE   : 0x02,
+				 * RCV_0.1W_MODE   : 0x03,
+				 * RCV_0.5W_MODE   : 0x04,
+				 */
+				spk-rcv-mode = <1>;
 				/* EXTERNAL_CLOCK_19_2   : 0x00,
 				 * EXTERNAL_CLOCK_24_576 : 0x01,
 				 * PLL_CLKIN_MCLK        : 0x02,
 				 * PLL_CLKIN_BCLK        : 0x03
 				 */
-				sma1305,gpio-int= <&gpio 4 0>;
-				/* SPK_4.0W_MODE   : 0x00,
-				 * SPK_6.0W_MODE   : 0x01,
-				 * RCV_0.1W_MODE   : 0x02,
-				 * RCV_0.5W_MODE   : 0x03,
-				 */
-				spk-rcv-mode = <1>;
 				sys-clk-id = <0x03>;
+				sma1305,gpio-int= <&gpio 4 0>;
 				i2c-retry-count = <3>;
+				/* temp-gain-table = <0xF1 0x36 1>,<0xFB 0x35 0>,
+						  <0xFF 0x34 0>,<0x05 0x33 0>,
+						  <0x0A 0x32 0>,<0x0F 0x31 0>,
+						  <0x14 0x30 0>; */
 				status = "okay";
 			};
 		};
