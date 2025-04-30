@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* Extended support for SMA AMP
  *
- * Copyright 2021 Silicon Mitus Corporation / Iron Device Corporation
+ * Copyright 2025 Iron Device Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
