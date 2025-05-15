@@ -79,7 +79,7 @@
 				 * RCV_0.1W_MODE   : 0x03,
 				 * RCV_0.5W_MODE   : 0x04,
 				 */
-				spk-rcv-mode = <1>;
+				spk-rcv-mode = <2>;
 				/* EXTERNAL_CLOCK_19_2   : 0x00,
 				 * EXTERNAL_CLOCK_24_576 : 0x01,
 				 * PLL_CLKIN_MCLK        : 0x02,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r027, 2025.04.30	- initial version  sma1305
+ * r028, 2025.05.15	- initial version  sma1305
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -184,6 +184,13 @@ static const struct reg_default sma1305_reg_def[] = {
 	{ 0x12, 0x00 }, /* 0x12 SystemCTRL3  */
 	{ 0x13, 0x09 }, /* 0x13 Delay  */
 	{ 0x14, 0x12 }, /* 0x14 Modulator  */
+	{ 0x15, 0x01 }, /* 0x15 BassSpk1  */
+	{ 0x16, 0x0F }, /* 0x16 BassSpk2  */
+	{ 0x17, 0x0F }, /* 0x17 BassSpk3  */
+	{ 0x18, 0x0F }, /* 0x18 BassSpk4  */
+	{ 0x19, 0x60 }, /* 0x19 BassSpk5  */
+	{ 0x1A, 0x00 }, /* 0x1A BassSpk6  */
+	{ 0x1B, 0x00 }, /* 0x1B BassSpk7  */
 	{ 0x1C, 0x0F }, /* 0x1C BrownOut Protection20  */
 	{ 0x1D, 0x05 }, /* 0x1D BrownOut Protection0  */
 	{ 0x1E, 0xA1 }, /* 0x1E Tone Generator  */
@@ -4441,7 +4448,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV027\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV028\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

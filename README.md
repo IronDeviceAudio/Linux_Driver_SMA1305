@@ -62,3 +62,5 @@ REV025: Additional SW Peak margin is secured in situations where VBAT is abnorma
 REV026: Add 4.5W speaker mode.
 
 REV027: Fixed remaining leftovers.
+
+REV028: 6W setting in DT, 52Hz HPF default setting in Driver.
