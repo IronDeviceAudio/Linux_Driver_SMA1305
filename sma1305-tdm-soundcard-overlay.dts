@@ -48,8 +48,106 @@
 				 * 4 slot : 0 ~ 3,
 				 * 8 slot : 0 ~ 7
 				 */
-				/*tdm-slot-rx = <0>;
-				tdm-slot-tx = <2>;*/
+				tdm-slot-rx = <0>;
+				tdm-slot-tx = <4>;
+				/* Disalbe	: 0x00,
+				 * FORMAT_C	: 0x01,
+				 * MONO_MIX	: 0x02,
+				 * AFTER_DSP	: 0x03,
+				 * VRMS2_AVG	: 0x04,
+				 * VBAT_MON	: 0x05,
+				 * TEMP_MON	: 0x06,
+				 * AFTER_DEALY	: 0x07
+				 */
+				sdo0-sel = <5>;
+				stereo-two-chip;
+				/* SPK_4.0W_MODE   : 0x00,
+				 * SPK_4.5W_MODE   : 0x01,
+				 * SPK_6.0W_MODE   : 0x02,
+				 * RCV_0.1W_MODE   : 0x03,
+				 * RCV_0.5W_MODE   : 0x04,
+				 */
+				spk-rcv-mode = <1>;
+				/* EXTERNAL_CLOCK_19_2   : 0x00,
+				 * EXTERNAL_CLOCK_24_576 : 0x01,
+				 * PLL_CLKIN_MCLK        : 0x02,
+				 * PLL_CLKIN_BCLK        : 0x03
+				 */
+				sys-clk-id = <0x03>;
+				sma1305,gpio-int= <&gpio 4 0>;
+				i2c-retry-count = <3>;
+				/* temp-gain-table = <0xF1 0x36 1>,<0xFB 0x35 0>,
+						  <0xFF 0x34 0>,<0x05 0x33 0>,
+						  <0x0A 0x32 0>,<0x0F 0x31 0>,
+						  <0x14 0x30 0>; */
+				status = "okay";
+			};
+			
+			sma1305_amp: sma1305@3e {
+				#sound-dai-cells = <0>;
+				compatible = "irondevice,sma1305";
+				reg = <0x3e>;
+				init-vol = <0x31>;
+				/* TDM Slot Position
+				 * 4 slot : 0 ~ 3,
+				 * 8 slot : 0 ~ 7
+				 */
+				tdm-slot-rx = <1>;
+				tdm-slot-tx = <5>;
+				/* Disalbe	: 0x00,
+				 * FORMAT_C	: 0x01,
+				 * MONO_MIX	: 0x02,
+				 * AFTER_DSP	: 0x03,
+				 * VRMS2_AVG	: 0x04,
+				 * VBAT_MON	: 0x05,
+				 * TEMP_MON	: 0x06,
+				 * AFTER_DEALY	: 0x07
+				 */
+				sdo0-sel = <5>;
+				stereo-two-chip;
+				/* SPK_4.0W_MODE   : 0x00,
+				 * SPK_4.5W_MODE   : 0x01,
+				 * SPK_6.0W_MODE   : 0x02,
+				 * RCV_0.1W_MODE   : 0x03,
+				 * RCV_0.5W_MODE   : 0x04,
+				 */
+				spk-rcv-mode = <1>;
+				/* EXTERNAL_CLOCK_19_2   : 0x00,
+				 * EXTERNAL_CLOCK_24_576 : 0x01,
+				 * PLL_CLKIN_MCLK        : 0x02,
+				 * PLL_CLKIN_BCLK        : 0x03
+				 */
+				sys-clk-id = <0x03>;
+				sma1305,gpio-int= <&gpio 4 0>;
+				i2c-retry-count = <3>;
+				/* temp-gain-table = <0xF1 0x36 1>,<0xFB 0x35 0>,
+						  <0xFF 0x34 0>,<0x05 0x33 0>,
+						  <0x0A 0x32 0>,<0x0F 0x31 0>,
+						  <0x14 0x30 0>; */
+				status = "okay";
+			};
+			
+			sma1305_amp: sma1305@5e {
+				#sound-dai-cells = <0>;
+				compatible = "irondevice,sma1305";
+				reg = <0x5e>;
+				init-vol = <0x31>;
+				/* TDM Slot Position
+				 * 4 slot : 0 ~ 3,
+				 * 8 slot : 0 ~ 7
+				 */
+				tdm-slot-rx = <2>;
+				tdm-slot-tx = <6>;
+				/* Disalbe	: 0x00,
+				 * FORMAT_C	: 0x01,
+				 * MONO_MIX	: 0x02,
+				 * AFTER_DSP	: 0x03,
+				 * VRMS2_AVG	: 0x04,
+				 * VBAT_MON	: 0x05,
+				 * TEMP_MON	: 0x06,
+				 * AFTER_DEALY	: 0x07
+				 */
+				sdo0-sel = <5>;
 				stereo-two-chip;
 				/* SPK_4.0W_MODE   : 0x00,
 				 * SPK_4.5W_MODE   : 0x01,
@@ -82,8 +180,18 @@
 				 * 4 slot : 0 ~ 3,
 				 * 8 slot : 0 ~ 7
 				 */
-				/*tdm-slot-rx = <1>;
-				tdm-slot-tx = <3>;*/
+				tdm-slot-rx = <3>;
+				tdm-slot-tx = <7>;
+				/* Disalbe	: 0x00,
+				 * FORMAT_C	: 0x01,
+				 * MONO_MIX	: 0x02,
+				 * AFTER_DSP	: 0x03,
+				 * VRMS2_AVG	: 0x04,
+				 * VBAT_MON	: 0x05,
+				 * TEMP_MON	: 0x06,
+				 * AFTER_DEALY	: 0x07
+				 */
+				sdo0-sel = <5>;
 				stereo-two-chip;
 				/* SPK_4.0W_MODE   : 0x00,
 				 * SPK_4.5W_MODE   : 0x01,
@@ -114,12 +222,12 @@
 		__overlay__ {
 			compatible = "simple-audio-card";
 			simple-audio-card,name = "sma1305_soundcard";
-			simple-audio-card,format = "i2s";
+			simple-audio-card,format = "DSP_A";
 			simple-audio-card,bitclock-slave = <&codec_dai>;
 			simple-audio-card,frame-slave = <&codec_dai>;
 			status = "okay";
 			cpu_dai: simple-audio-card,cpu {
-				sound-dai = <&i2s>;
+				sound-dai = <&tdm>;
 			};
 			codec_dai: simple-audio-card,codec {
 				sound-dai = <&sma1305_amp>;

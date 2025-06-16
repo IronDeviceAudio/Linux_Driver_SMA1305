@@ -44,6 +44,12 @@
 				compatible = "irondevice,sma1305";
 				reg = <0x1e>;
 				init-vol = <0x31>;
+				/* TDM Slot Position
+				 * 4 slot : 0 ~ 3,
+				 * 8 slot : 0 ~ 7
+				 */
+				/*tdm-slot-rx = <0>;
+				tdm-slot-tx = <1>;*/
 				//stereo-two-chip;
 				/* SPK_4.0W_MODE   : 0x00,
 				 * SPK_4.5W_MODE   : 0x01,
