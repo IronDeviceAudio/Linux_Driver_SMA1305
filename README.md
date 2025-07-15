@@ -78,3 +78,7 @@ REV031: Apply changes according to the kernel version.
 REV032: Add 4.5W speaker mode.
 
 REV033: Fixed remaining leftovers.
+
+REV034: Add example of TDM slot position configuration in devicetree.
+
+REV035: Remove name_prefix setting for ignore_suspend.

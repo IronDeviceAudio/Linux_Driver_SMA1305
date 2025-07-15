@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r033, 2025.04.30	- initial version  sma1305
+ * r035, 2025.07.15	- initial version  sma1305
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -4404,40 +4404,11 @@ static int sma1305_probe(struct snd_soc_component *component)
 {
 	struct snd_soc_dapm_context *dapm =
 		snd_soc_component_get_dapm(component);
-	char *dapm_widget_str = NULL;
-	int prefix_len = 0, str_max = 30;
 
 	dev_info(component->dev, "%s\n", __func__);
 
-	if (component->name_prefix != NULL) {
-		dev_info(component->dev, "%s : component name prefix - %s\n",
-			__func__, component->name_prefix);
-
-		prefix_len = strlen(component->name_prefix);
-		dapm_widget_str = kzalloc(prefix_len + str_max, GFP_KERNEL);
-
-		if (!dapm_widget_str) {
-			kfree(dapm_widget_str);
-			return -ENOMEM;
-		}
-
-		strcpy(dapm_widget_str, component->name_prefix);
-		strcat(dapm_widget_str, " Playback");
-
-		snd_soc_dapm_ignore_suspend(dapm, dapm_widget_str);
-
-		memset(dapm_widget_str + prefix_len, 0, str_max);
-
-		strcpy(dapm_widget_str, component->name_prefix);
-		strcat(dapm_widget_str, " SPK");
-
-		snd_soc_dapm_ignore_suspend(dapm, dapm_widget_str);
-
-		kfree(dapm_widget_str);
-	} else {
-		snd_soc_dapm_ignore_suspend(dapm, "Playback");
-		snd_soc_dapm_ignore_suspend(dapm, "SPK");
-	}
+	snd_soc_dapm_ignore_suspend(dapm, "Playback");
+	snd_soc_dapm_ignore_suspend(dapm, "SPK");
 
 	snd_soc_dapm_sync(dapm);
 
@@ -4496,7 +4467,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV033\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV035\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
