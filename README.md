@@ -82,3 +82,5 @@ REV033: Fixed remaining leftovers.
 REV034: Add example of TDM slot position configuration in devicetree.
 
 REV035: Remove name_prefix setting for ignore_suspend.
+
+REV036: The multi-bytes mixer controls have been split into individual mixer controls on 1-byte units.

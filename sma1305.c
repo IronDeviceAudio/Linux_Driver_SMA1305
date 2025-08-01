@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r035, 2025.07.15	- initial version  sma1305
+ * r036, 2025.08.01
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -594,6 +594,76 @@ static int bo_lvl_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_02_BROWN_OUT_PROT1);
 }
+static int sma1305_bo_lv1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_02_BROWN_OUT_PROT1);
+}
+static int sma1305_bo_lv1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_02_BROWN_OUT_PROT1);
+}
+static int sma1305_bo_lv2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_03_BROWN_OUT_PROT2);
+}
+static int sma1305_bo_lv2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_03_BROWN_OUT_PROT2);
+}
+static int sma1305_bo_lv3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_04_BROWN_OUT_PROT3);
+}
+static int sma1305_bo_lv3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_04_BROWN_OUT_PROT3);
+}
+static int sma1305_bo_lv4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_05_BROWN_OUT_PROT8);
+}
+static int sma1305_bo_lv4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_05_BROWN_OUT_PROT8);
+}
+static int sma1305_bo_lv5_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_06_BROWN_OUT_PROT9);
+}
+static int sma1305_bo_lv5_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_06_BROWN_OUT_PROT9);
+}
+static int sma1305_bo_lv6_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_07_BROWN_OUT_PROT10);
+}
+static int sma1305_bo_lv6_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_07_BROWN_OUT_PROT10);
+}
+static int sma1305_bo_lv7_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_08_BROWN_OUT_PROT11);
+}
+static int sma1305_bo_lv7_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_08_BROWN_OUT_PROT11);
+}
 
 /* 0x09[7:6] PORT_CONFIG */
 static const char * const sma1305_port_config_text[] = {
@@ -1100,6 +1170,83 @@ static int bass_spk_coeff_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_15_BASS_SPK1);
 }
+static int sma1305_bass1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_15_BASS_SPK1);
+}
+
+static int sma1305_bass1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_15_BASS_SPK1);
+}
+static int sma1305_bass2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_16_BASS_SPK2);
+}
+
+static int sma1305_bass2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_16_BASS_SPK2);
+}
+static int sma1305_bass3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_17_BASS_SPK3);
+}
+
+static int sma1305_bass3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_17_BASS_SPK3);
+}
+static int sma1305_bass4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_18_BASS_SPK4);
+}
+
+static int sma1305_bass4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_18_BASS_SPK4);
+}
+static int sma1305_bass5_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_19_BASS_SPK5);
+}
+
+static int sma1305_bass5_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_19_BASS_SPK5);
+}
+static int sma1305_bass6_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_1A_BASS_SPK6);
+}
+
+static int sma1305_bass6_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_1A_BASS_SPK6);
+}
+static int sma1305_bass7_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_1B_BASS_SPK7);
+}
+
+static int sma1305_bass7_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_1B_BASS_SPK7);
+}
 
 /* 0x1C[3:0] BOP_HOLD_TIME */
 static const char * const sma1305_bop_hold_time_text[] = {
@@ -1216,6 +1363,57 @@ static int comp_hys_sel_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_22_COMP_HYS_SEL);
 }
+static int sma1305_drc1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_22_COMP_HYS_SEL);
+}
+static int sma1305_drc1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_22_COMP_HYS_SEL);
+}
+static int sma1305_drc2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_23_COMPLIM1);
+}
+static int sma1305_drc2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_23_COMPLIM1);
+}
+static int sma1305_drc3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_24_COMPLIM2);
+}
+static int sma1305_drc3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_24_COMPLIM2);
+}
+static int sma1305_drc4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_25_COMPLIM3);
+}
+static int sma1305_drc4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_25_COMPLIM3);
+}
+static int sma1305_drc5_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_26_COMPLIM4);
+}
+static int sma1305_drc5_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_26_COMPLIM4);
+}
+
 
 /* 0x27~0x32 BOP */
 static int brown_out_prot_get(struct snd_kcontrol *kcontrol,
@@ -1229,6 +1427,139 @@ static int brown_out_prot_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_27_BROWN_OUT_PROT4);
 }
+static int sma1305_bop_lv1_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_27_BROWN_OUT_PROT4);
+}
+
+static int sma1305_bop_lv1_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_27_BROWN_OUT_PROT4);
+}
+static int sma1305_bop_lv2_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_28_BROWN_OUT_PROT5);
+}
+
+static int sma1305_bop_lv2_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_28_BROWN_OUT_PROT5);
+}
+static int sma1305_bop_lv3_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_29_BROWN_OUT_PROT12);
+}
+
+static int sma1305_bop_lv3_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_29_BROWN_OUT_PROT12);
+}
+static int sma1305_bop_lv4_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2A_BROWN_OUT_PROT13);
+}
+
+static int sma1305_bop_lv4_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2A_BROWN_OUT_PROT13);
+}
+static int sma1305_bop_lv5_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2B_BROWN_OUT_PROT14);
+}
+
+static int sma1305_bop_lv5_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2B_BROWN_OUT_PROT14);
+}
+static int sma1305_bop_lv6_ocl_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2C_BROWN_OUT_PROT15);
+}
+
+static int sma1305_bop_lv6_ocl_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2C_BROWN_OUT_PROT15);
+}
+static int sma1305_bop_lv1_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2D_BROWN_OUT_PROT6);
+}
+
+static int sma1305_bop_lv1_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2D_BROWN_OUT_PROT6);
+}
+static int sma1305_bop_lv2_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2E_BROWN_OUT_PROT7);
+}
+
+static int sma1305_bop_lv2_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2E_BROWN_OUT_PROT7);
+}
+static int sma1305_bop_lv3_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_2F_BROWN_OUT_PROT16);
+}
+
+static int sma1305_bop_lv3_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_2F_BROWN_OUT_PROT16);
+}
+static int sma1305_bop_lv4_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_30_BROWN_OUT_PROT17);
+}
+
+static int sma1305_bop_lv4_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_30_BROWN_OUT_PROT17);
+}
+static int sma1305_bop_lv5_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_31_BROWN_OUT_PROT18);
+}
+
+static int sma1305_bop_lv5_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_31_BROWN_OUT_PROT18);
+}
+static int sma1305_bop_lv6_comp_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_32_BROWN_OUT_PROT19);
+}
+
+static int sma1305_bop_lv6_comp_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_32_BROWN_OUT_PROT19);
+}
+
 
 /* 0x34[3:2] OCP_FILTER */
 static const char * const sma1305_ocp_filter_text[] = {
@@ -1554,6 +1885,61 @@ static int test_mode_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3B_TEST1);
 }
+static int test_mode1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_3B_TEST1);
+}
+
+static int test_mode1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3B_TEST1);
+}
+static int test_mode2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_3C_TEST2);
+}
+
+static int test_mode2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3C_TEST2);
+}
+static int test_mode3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_3D_TEST3);
+}
+
+static int test_mode3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3D_TEST3);
+}
+static int atest_mode1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_3E_IDLE_MODE_CTRL);
+}
+
+static int atest_mode1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3E_IDLE_MODE_CTRL);
+}
+static int atest_mode2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_3F_ATEST2);
+}
+
+static int atest_mode2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_3F_ATEST2);
+}
 
 /* 0x8B ~ 0x8E PLL Setting */
 static int pll_setting_get(struct snd_kcontrol *kcontrol,
@@ -1616,6 +2002,29 @@ static int crest_lim_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_90_CRESTLIM1);
 }
+static int crest_lim1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_90_CRESTLIM1);
+}
+
+static int crest_lim1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_90_CRESTLIM1);
+}
+static int crest_lim2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_91_CRESTLIM2);
+}
+
+static int crest_lim2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_91_CRESTLIM2);
+}
+
 
 /* 0x92[7:4] FLT_VDD_GAIN */
 static const char * const sma1305_flt_vdd_gain_text[] = {
@@ -1960,6 +2369,50 @@ static int otp_trimming_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_97_OTP_TRM0);
+}
+static int otp_trimming1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_97_OTP_TRM0);
+}
+
+static int otp_trimming1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_97_OTP_TRM0);
+}
+static int otp_trimming2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_98_OTP_TRM1);
+}
+
+static int otp_trimming2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_98_OTP_TRM1);
+}
+static int otp_trimming3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_99_OTP_TRM2);
+}
+
+static int otp_trimming3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_99_OTP_TRM2);
+}
+static int otp_trimming4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_9A_OTP_TRM3);
+}
+
+static int otp_trimming4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_9A_OTP_TRM3);
 }
 
 /* 0xA2[5:4] PLL_DIV */
@@ -2440,6 +2893,83 @@ static int boost_ctrl_put(struct snd_kcontrol *kcontrol,
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_A8_BOOST_CTRL1);
 }
+static int boost_ctrl1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_A8_BOOST_CTRL1);
+}
+
+static int boost_ctrl1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_A8_BOOST_CTRL1);
+}
+static int boost_ctrl2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_A9_BOOST_CTRL2);
+}
+
+static int boost_ctrl2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_A9_BOOST_CTRL2);
+}
+static int boost_ctrl3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_AA_BOOST_CTRL3);
+}
+
+static int boost_ctrl3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_AA_BOOST_CTRL3);
+}
+static int boost_ctrl4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_AB_BOOST_CTRL4);
+}
+
+static int boost_ctrl4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_AB_BOOST_CTRL4);
+}
+static int boost_ctrl5_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_AC_BOOST_CTRL5);
+}
+
+static int boost_ctrl5_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_AC_BOOST_CTRL5);
+}
+static int boost_ctrl6_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_AD_BOOST_CTRL6);
+}
+
+static int boost_ctrl6_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_AD_BOOST_CTRL6);
+}
+static int boost_ctrl7_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_AE_BOOST_CTRL7);
+}
+
+static int boost_ctrl7_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_AE_BOOST_CTRL7);
+}
 
 /* 0xAF LPF */
 static int lpf_ctrl_get(struct snd_kcontrol *kcontrol,
@@ -2465,6 +2995,72 @@ static int power_meter2_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B0_RMS_TC1);
+}
+static int sma1305_pmt1_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B0_RMS_TC1);
+}
+
+static int sma1305_pmt1_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B0_RMS_TC1);
+}
+static int sma1305_pmt2_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B1_RMS_TC2);
+}
+
+static int sma1305_pmt2_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B1_RMS_TC2);
+}
+static int sma1305_pmt3_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B2_AVG_TC1);
+}
+
+static int sma1305_pmt3_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B2_AVG_TC1);
+}
+static int sma1305_pmt4_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B3_AVG_TC2);
+}
+
+static int sma1305_pmt4_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B3_AVG_TC2);
+}
+static int sma1305_pmt5_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B4_PRVALUE1);
+}
+
+static int sma1305_pmt5_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B4_PRVALUE1);
+}
+static int sma1305_pmt6_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_get(kcontrol, ucontrol, SMA1305_B5_PRVALUE2);
+}
+
+static int sma1305_pmt6_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	return bytes_ext_put(kcontrol, ucontrol, SMA1305_B5_PRVALUE2);
 }
 
 static const char * const speaker_receiver_mode_text[] = {
@@ -2530,6 +3126,20 @@ SOC_SINGLE("Data written SCK edge(1:R_0:F)",
 /* Brown Out Protection [0x02 ~ 0x08] */
 SND_SOC_BYTES_EXT("Brown Out Level Setting", 7,
 	bo_lvl_get, bo_lvl_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV1", 1,
+	sma1305_bo_lv1_get, sma1305_bo_lv1_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV2", 1,
+	sma1305_bo_lv2_get, sma1305_bo_lv2_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV3", 1,
+	sma1305_bo_lv3_get, sma1305_bo_lv3_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV4", 1,
+	sma1305_bo_lv4_get, sma1305_bo_lv4_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV5", 1,
+	sma1305_bo_lv5_get, sma1305_bo_lv5_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV6", 1,
+	sma1305_bo_lv6_get, sma1305_bo_lv6_put),
+SND_SOC_BYTES_EXT("Brown Out Level Setting LV7", 1,
+	sma1305_bo_lv7_get, sma1305_bo_lv7_put),
 
 /* Output CTRL [0x09] */
 SOC_ENUM_EXT("Port In/Out port config", sma1305_port_config_enum,
@@ -2597,6 +3207,20 @@ SND_SOC_BYTES_EXT("Speaker BDELAY", 1, spk_bdelay_get, spk_bdelay_put),
 /* BassSpk1~7 [0x15 ~ 0x1B] */
 SND_SOC_BYTES_EXT("Bass Boost SPK Coeff", 7,
 	bass_spk_coeff_get, bass_spk_coeff_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 1", 1,
+	sma1305_bass1_get, sma1305_bass1_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 2", 1,
+	sma1305_bass2_get, sma1305_bass2_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 3", 1,
+	sma1305_bass3_get, sma1305_bass3_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 4", 1,
+	sma1305_bass4_get, sma1305_bass4_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 5", 1,
+	sma1305_bass5_get, sma1305_bass5_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 6", 1,
+	sma1305_bass6_get, sma1305_bass6_put),
+SND_SOC_BYTES_EXT("Bass Boost SPK Coeff 7", 1,
+	sma1305_bass7_get, sma1305_bass7_put),
 
 /* BROWN_OUT_PROT20 [0x1C] */
 SOC_ENUM_EXT("BOP Hold Time", sma1305_bop_hold_time_enum,
@@ -2625,10 +3249,45 @@ SND_SOC_BYTES_EXT("Tone Fine Volume", 1,
 /* Comp_Lim1~4 [0x22 ~ 0x26] */
 SND_SOC_BYTES_EXT("Comp/Limiter Control", 5,
 	comp_hys_sel_get, comp_hys_sel_put),
+SND_SOC_BYTES_EXT("DRC Control 1", 1,
+	sma1305_drc1_get, sma1305_drc1_put),
+SND_SOC_BYTES_EXT("DRC Control 2", 1,
+	sma1305_drc2_get, sma1305_drc2_put),
+SND_SOC_BYTES_EXT("DRC Control 3", 1,
+	sma1305_drc3_get, sma1305_drc3_put),
+SND_SOC_BYTES_EXT("DRC Control 4", 1,
+	sma1305_drc4_get, sma1305_drc4_put),
+SND_SOC_BYTES_EXT("DRC Control 5", 1,
+	sma1305_drc5_get, sma1305_drc5_put),
 
 /* BROWN_OUT_PROT [0x27 ~ 0x32] */
 SND_SOC_BYTES_EXT("Brown Out Protection", 12,
 	brown_out_prot_get, brown_out_prot_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV1 OCL", 1,
+	sma1305_bop_lv1_ocl_get, sma1305_bop_lv1_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV2 OCL", 1,
+	sma1305_bop_lv2_ocl_get, sma1305_bop_lv2_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV3 OCL", 1,
+	sma1305_bop_lv3_ocl_get, sma1305_bop_lv3_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV4 OCL", 1,
+	sma1305_bop_lv4_ocl_get, sma1305_bop_lv4_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV5 OCL", 1,
+	sma1305_bop_lv5_ocl_get, sma1305_bop_lv5_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV6 OCL", 1,
+	sma1305_bop_lv6_ocl_get, sma1305_bop_lv6_ocl_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV1 Comp", 1,
+	sma1305_bop_lv1_comp_get, sma1305_bop_lv1_comp_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV2 Comp", 1,
+	sma1305_bop_lv2_comp_get, sma1305_bop_lv2_comp_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV3 Comp", 1,
+	sma1305_bop_lv3_comp_get, sma1305_bop_lv3_comp_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV4 Comp", 1,
+	sma1305_bop_lv4_comp_get, sma1305_bop_lv4_comp_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV5 COMP", 1,
+	sma1305_bop_lv5_comp_get, sma1305_bop_lv5_comp_put),
+SND_SOC_BYTES_EXT("Brown Out Protection LV6 Comp", 1,
+	sma1305_bop_lv6_comp_get, sma1305_bop_lv6_comp_put),
+
 
 /* OCP_SPK [0x34] */
 SOC_ENUM_EXT("OCP Filter Time", sma1305_ocp_filter_enum,
@@ -2675,6 +3334,16 @@ SND_SOC_BYTES_EXT("Power Meter Hysteresis", 2,
 /* Test1~3, DIG_IDLE_CURRENT, ATEST2 [0x3B ~ 0x3F] */
 SND_SOC_BYTES_EXT("Test mode(Test 1~3_ATEST 1~2)",
 		5, test_mode_get, test_mode_put),
+SND_SOC_BYTES_EXT("Test mode1",
+		1, test_mode1_get, test_mode1_put),
+SND_SOC_BYTES_EXT("Test mode2",
+		1, test_mode2_get, test_mode2_put),
+SND_SOC_BYTES_EXT("Test mode3",
+		1, test_mode3_get, test_mode3_put),
+SND_SOC_BYTES_EXT("ATest mode1",
+		1, atest_mode1_get, atest_mode1_put),
+SND_SOC_BYTES_EXT("ATest mode2",
+		1, atest_mode2_get, atest_mode2_put),
 
 /* PLL Setting [0x8B ~ 0x8E] */
 SND_SOC_BYTES_EXT("PLL Setting", 4, pll_setting_get, pll_setting_put),
@@ -2688,6 +3357,10 @@ SOC_ENUM_EXT("OTA GM Control", sma1305_gm_ctrl_enum,
 /* CrestLim [0x90 ~ 0x91] */
 SND_SOC_BYTES_EXT("Crest Limit", 2,
 		crest_lim_get, crest_lim_put),
+SND_SOC_BYTES_EXT("Crest Limit1", 1,
+		crest_lim1_get, crest_lim1_put),
+SND_SOC_BYTES_EXT("Crest Limit2", 1,
+		crest_lim2_get, crest_lim2_put),
 
 /* FDPEC CTRL1 [0x92] */
 SOC_ENUM_EXT("Filtered VDD gain control", sma1305_flt_vdd_gain_enum,
@@ -2730,6 +3403,14 @@ SOC_ENUM_EXT("Set Driver Off Deadtime", sma1305_set_dt_off_enum,
 /* OTP_TRM [0x97 ~ 0x9A] */
 SND_SOC_BYTES_EXT("OTP Trimming", 4,
 	otp_trimming_get, otp_trimming_put),
+SND_SOC_BYTES_EXT("OTP Trimming1", 1,
+	otp_trimming1_get, otp_trimming1_put),
+SND_SOC_BYTES_EXT("OTP Trimming2", 1,
+	otp_trimming2_get, otp_trimming2_put),
+SND_SOC_BYTES_EXT("OTP Trimming3", 1,
+	otp_trimming3_get, otp_trimming3_put),
+SND_SOC_BYTES_EXT("OTP Trimming4", 1,
+	otp_trimming4_get, otp_trimming4_put),
 
 /* TOP_MAN1 [0xA2] */
 SOC_SINGLE("PLL Lock Skip Mode(1:Dis_0:En)",
@@ -2797,6 +3478,20 @@ SOC_SINGLE("Limiter Oper Range(1:En_0:Dis)",
 /* Boost CTRL [0xA8 ~ 0xAE] */
 SND_SOC_BYTES_EXT("Boost Control", 7,
 		boost_ctrl_get, boost_ctrl_put),
+SND_SOC_BYTES_EXT("Boost Control 1", 1,
+		boost_ctrl1_get, boost_ctrl1_put),
+SND_SOC_BYTES_EXT("Boost Control 2", 1,
+		boost_ctrl2_get, boost_ctrl2_put),
+SND_SOC_BYTES_EXT("Boost Control 3", 1,
+		boost_ctrl3_get, boost_ctrl3_put),
+SND_SOC_BYTES_EXT("Boost Control 4", 1,
+		boost_ctrl4_get, boost_ctrl4_put),
+SND_SOC_BYTES_EXT("Boost Control 5", 1,
+		boost_ctrl5_get, boost_ctrl5_put),
+SND_SOC_BYTES_EXT("Boost Control 6", 1,
+		boost_ctrl6_get, boost_ctrl6_put),
+SND_SOC_BYTES_EXT("Boost Control 7", 1,
+		boost_ctrl7_get, boost_ctrl7_put),
 
 /* LPF [0xAF] */
 SND_SOC_BYTES_EXT("LPF Tuning Coef", 1,
@@ -2805,6 +3500,18 @@ SND_SOC_BYTES_EXT("LPF Tuning Coef", 1,
 /* Power Meter2 [0xB0 ~ 0xB5] */
 SND_SOC_BYTES_EXT("Power Meter Control", 6,
 		power_meter2_get, power_meter2_put),
+SND_SOC_BYTES_EXT("Power Meter Control 1", 1,
+		sma1305_pmt1_get, sma1305_pmt1_put),
+SND_SOC_BYTES_EXT("Power Meter Control 2", 1,
+		sma1305_pmt2_get, sma1305_pmt2_put),
+SND_SOC_BYTES_EXT("Power Meter Control 3", 1,
+		sma1305_pmt3_get, sma1305_pmt3_put),
+SND_SOC_BYTES_EXT("Power Meter Control 4", 1,
+		sma1305_pmt4_get, sma1305_pmt4_put),
+SND_SOC_BYTES_EXT("Power Meter Control 5", 1,
+		sma1305_pmt5_get, sma1305_pmt5_put),
+SND_SOC_BYTES_EXT("Power Meter Control 6", 1,
+		sma1305_pmt6_get, sma1305_pmt6_put),
 
 /* Boost CTRL5 [0xAC] */
 SOC_ENUM_EXT("Boost Mode Control", sma1305_boost_mode_enum,
@@ -2995,8 +3702,8 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_14_MODULATOR, 0x12);
 		/* Tone Generator(Volume - Off) & Fine volume Activate */
 		sma1305_regmap_write(sma1305, SMA1305_1E_TONE_GENERATOR, 0xA1);
-		/* Limiter Attack Level : 4.7ms, Release Time : 0.45s */
-		sma1305_regmap_write(sma1305, SMA1305_24_COMPLIM2, 0x7A);
+		/* Limiter Attack Level : 0.3ms, Release Time : 0.1s */
+		sma1305_regmap_write(sma1305, SMA1305_24_COMPLIM2, 0x04);
 		/* OP1 : 20uA(LOW_PWR), OP2 : 40uA, Low R(10kohm), SPKx3.0 */
 		sma1305_regmap_write(sma1305, SMA1305_35_FDPEC_CTRL0, 0x16);
 		/* ENV_TRA, BOP_CTRL Enable */
@@ -3021,6 +3728,37 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_AB_BOOST_CTRL4, 0x11);
 		/* Release Time : 83.33us */
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		/* Comp/Limiter Cotnrol */
+		sma1305_regmap_write(sma1305, SMA1305_11_SYSTEM_CTRL2, 0x20);
+		sma1305_regmap_write(sma1305, SMA1305_22_COMP_HYS_SEL, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_23_COMPLIM1, 0x1F);
+		sma1305_regmap_write(sma1305, SMA1305_24_COMPLIM2, 0x04);
+		sma1305_regmap_write(sma1305, SMA1305_25_COMPLIM3, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_26_COMPLIM4, 0xFF);
+		/* BOP Level Setting */
+		sma1305_regmap_write(sma1305, SMA1305_02_BROWN_OUT_PROT1, 0x67);
+		sma1305_regmap_write(sma1305, SMA1305_03_BROWN_OUT_PROT2, 0x62);
+		sma1305_regmap_write(sma1305, SMA1305_04_BROWN_OUT_PROT3, 0x58);
+		sma1305_regmap_write(sma1305, SMA1305_05_BROWN_OUT_PROT8, 0x52);
+		sma1305_regmap_write(sma1305, SMA1305_06_BROWN_OUT_PROT9, 0x4C);
+		sma1305_regmap_write(sma1305, SMA1305_07_BROWN_OUT_PROT10, 0x4A);
+		sma1305_regmap_write(sma1305, SMA1305_08_BROWN_OUT_PROT11, 0x47);
+		sma1305_regmap_write(sma1305, SMA1305_1C_BROWN_OUT_PROT20, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_1D_BROWN_OUT_PROT0, 0x85);
+		sma1305_regmap_write(sma1305, SMA1305_27_BROWN_OUT_PROT4, 0xBF);
+		sma1305_regmap_write(sma1305, SMA1305_28_BROWN_OUT_PROT5, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_29_BROWN_OUT_PROT12, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2A_BROWN_OUT_PROT13, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2B_BROWN_OUT_PROT14, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2C_BROWN_OUT_PROT15, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2D_BROWN_OUT_PROT6, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2E_BROWN_OUT_PROT7, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2F_BROWN_OUT_PROT16, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_30_BROWN_OUT_PROT17, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_31_BROWN_OUT_PROT18, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_32_BROWN_OUT_PROT19, 0xFF);
+
+
 		break;
 	case SMA1305_SPEAKER_6W_MODE:
 		/* SPK Volume : -1.0dB */
@@ -4467,7 +5205,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV035\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV036\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
