@@ -64,3 +64,5 @@ REV026: Add 4.5W speaker mode.
 REV027: Fixed remaining leftovers.
 
 REV028: 6W setting in DT, 52Hz HPF default setting in Driver.
+
+REV029: Apply changes according to the kernel version.

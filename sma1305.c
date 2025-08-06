@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r028, 2025.05.15	- initial version  sma1305
+ * r029, 2025.08.06	- initial version  sma1305
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -89,7 +89,6 @@ struct sma1305_temp_gain_match {
 };
 
 struct sma1305_priv {
-	enum sma1305_type devtype;
 	struct attribute_group *attr_grp;
 	struct kobject *kobj;
 	struct regmap *regmap;
@@ -4438,8 +4437,7 @@ const struct regmap_config sma_i2c_regmap = {
 	.num_reg_defaults = ARRAY_SIZE(sma1305_reg_def),
 };
 
-static int sma1305_i2c_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+static int sma1305_i2c_probe(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305;
 	struct device_node *np = client->dev.of_node;
@@ -4448,7 +4446,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV028\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV029\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4720,7 +4718,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->fix_gain_count = 0;
 	sma1305->check_amb_temp_status = true;
 
-	sma1305->devtype = (enum sma1305_type) id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
 
@@ -4804,7 +4801,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	return ret;
 }
 
-static int sma1305_i2c_remove(struct i2c_client *client)
+static void sma1305_i2c_remove(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305 =
 		(struct sma1305_priv *) i2c_get_clientdata(client);
@@ -4821,8 +4818,6 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 
 		devm_kfree(&client->dev, sma1305);
 	}
-
-	return 0;
 }
 
 static const struct i2c_device_id sma1305_i2c_id[] = {
