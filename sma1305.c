@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r036, 2025.08.01
+ * r037, 2025.08.06
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -35,6 +35,9 @@
 #include <sound/ff_prot_spk.h>
 #endif
 
+#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#include <mtk-sp-spk-amp.h>
+#endif
 #include "sma1305.h"
 
 #define CHECK_PERIOD_TIME 1 /* sec per HZ */
@@ -78,6 +81,13 @@ struct sma1305_pll_match {
 	unsigned int vco;
 	unsigned int p_cp;
 };
+
+#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+struct irontune_dsp_msg {
+	int32_t ambient_temp;
+	int32_t vbat_voltage;
+};
+#endif
 
 struct sma1305_temp_gain_match {
 	__be32 thermal_limit;
@@ -3560,6 +3570,40 @@ static int sma1305_get_amb_temp(void)
 	return value.intval;
 }
 
+#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+static int sma1305_get_curr_voltage(void)
+{
+	struct power_supply *psy;
+	int ret = 0;
+	union power_supply_propval value = {0};
+
+	psy = power_supply_get_by_name("battery");
+
+	if (!psy) {
+		pr_err("%s: Fail to get psy (%s)\n",
+				__func__, "battery");
+		value.intval = 0;
+		ret = -ENOENT;
+	} else {
+		if (psy->desc->get_property != NULL) {
+			ret = psy->desc->get_property(psy,
+			 (enum power_supply_property)
+			 POWER_SUPPLY_PROP_VOLTAGE_NOW, &value);
+			if (ret < 0) {
+				pr_err("%s: Fail to %s get POWER_SUPPLY_PROP_VOLTAGE_NOW (%d)\n",
+						__func__, "battery", ret);
+				value.intval = 0;
+			}
+		} else {
+			ret = -EINVAL;
+		}
+		power_supply_put(psy);
+	}
+
+	return value.intval;
+}
+#endif
+
 static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 {
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
@@ -4751,6 +4795,13 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	int data = 0;
 	int data_dec = sma1305_get_amb_temp();
 	int8_t limit, gain, active;
+#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+	int ret = 0;
+	struct irontune_dsp_msg dsp_data;
+
+	dsp_data.ambient_temp = data_dec;
+	dsp_data.vbat_voltage = sma1305_get_curr_voltage();
+#endif
 
 	if (sma1305->amp_power_status) {
 
@@ -4839,6 +4890,13 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 #if IS_ENABLED(CONFIG_SND_SOC_APS_ALGO)
 		afe_ff_prot_algo_ctrl(&data_dec, 0,
 					SMA_SET_PARAM, sizeof(int));
+#endif
+#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+		ret = mtk_spk_send_ipi_buf_to_dsp(&dsp_data, sizeof(struct irontune_dsp_msg));
+		if (ret < 0) {
+			dev_err(sma1305->dev, "%s: MTK IPI Message send failed - %d\n",
+						__func__, ret);
+		}
 #endif
 		queue_delayed_work(system_freezable_wq,
 			&sma1305->check_amb_temp_work,
@@ -5205,7 +5263,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV036\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV037\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
