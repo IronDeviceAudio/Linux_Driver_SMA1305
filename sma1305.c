@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r037, 2025.08.06
+ * r038, 2025.08.11
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -35,7 +35,9 @@
 #include <sound/ff_prot_spk.h>
 #endif
 
-#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#define CONFIG_ID_MTK_WITH_AUDIO_DSP 1
+
+#if IS_ENABLED(CONFIG_ID_MTK_WITH_AUDIO_DSP)
 #include <mtk-sp-spk-amp.h>
 #endif
 #include "sma1305.h"
@@ -82,7 +84,7 @@ struct sma1305_pll_match {
 	unsigned int p_cp;
 };
 
-#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#if IS_ENABLED(CONFIG_ID_MTK_WITH_AUDIO_DSP)
 struct irontune_dsp_msg {
 	int32_t ambient_temp;
 	int32_t vbat_voltage;
@@ -3570,7 +3572,7 @@ static int sma1305_get_amb_temp(void)
 	return value.intval;
 }
 
-#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#if IS_ENABLED(CONFIG_ID_MTK_WITH_AUDIO_DSP)
 static int sma1305_get_curr_voltage(void)
 {
 	struct power_supply *psy;
@@ -4795,7 +4797,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 	int data = 0;
 	int data_dec = sma1305_get_amb_temp();
 	int8_t limit, gain, active;
-#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#if IS_ENABLED(CONFIG_ID_MTK_WITH_AUDIO_DSP)
 	int ret = 0;
 	struct irontune_dsp_msg dsp_data;
 
@@ -4891,7 +4893,7 @@ static void sma1305_check_amb_temp_worker(struct work_struct *work)
 		afe_ff_prot_algo_ctrl(&data_dec, 0,
 					SMA_SET_PARAM, sizeof(int));
 #endif
-#if IS_ENABLED(CONFIG_MTK_SCP_AUDIO)
+#if IS_ENABLED(CONFIG_ID_MTK_WITH_AUDIO_DSP)
 		ret = mtk_spk_send_ipi_buf_to_dsp(&dsp_data, sizeof(struct irontune_dsp_msg));
 		if (ret < 0) {
 			dev_err(sma1305->dev, "%s: MTK IPI Message send failed - %d\n",
@@ -5263,7 +5265,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV037\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV038\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

@@ -86,3 +86,5 @@ REV035: Remove name_prefix setting for ignore_suspend.
 REV036: The multi-bytes mixer controls have been split into individual mixer controls on 1-byte units.
 
 REV037: Implementation of Data Transfer Interface from AP to DSP in MTK RV55 Environment.
+
+REV038: Use a custom name for the CONFIG setting instead of the platform-defined name.

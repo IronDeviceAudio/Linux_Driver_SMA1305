@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r037, 2025.08.06
+ * r038, 2025.08.11
  *
  * Copyright 2025 Iron Device Corporation
  *
