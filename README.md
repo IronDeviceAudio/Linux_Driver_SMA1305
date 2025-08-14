@@ -88,3 +88,5 @@ REV036: The multi-bytes mixer controls have been split into individual mixer con
 REV037: Implementation of Data Transfer Interface from AP to DSP in MTK RV55 Environment.
 
 REV038: Use a custom name for the CONFIG setting instead of the platform-defined name.
+
+REV039: Fixed an issue where Force Mute was release in scenarios.

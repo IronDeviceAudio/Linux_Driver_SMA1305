@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r038, 2025.08.11
+ * r039, 2025.08.14
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -551,10 +551,13 @@ static int force_mute_control_put(struct snd_kcontrol *kcontrol,
 
 	sma1305->force_mute = (bool)sel;
 
+	mutex_lock(&sma1305->pwr_lock);
 	if (sma1305->amp_power_status) {
 		sma1305_regmap_update_bits(sma1305,
 			SMA1305_0E_MUTE_VOL_CTRL, 0x01, sel);
 	}
+	mutex_unlock(&sma1305->pwr_lock);
+
 	return 0;
 }
 /* 0x01[6:4] I2SMODE */
@@ -3923,6 +3926,9 @@ static int sma1305_startup(struct snd_soc_component *component)
 	if ((sma1305->force_mute) == false)
 		sma1305_regmap_update_bits(sma1305, SMA1305_0E_MUTE_VOL_CTRL,
 			SPK_MUTE_MASK, SPK_UNMUTE);
+	else
+		sma1305_regmap_update_bits(sma1305, SMA1305_0E_MUTE_VOL_CTRL,
+			SPK_MUTE_MASK, SPK_MUTE);
 
 	sma1305->amp_power_status = true;
 
@@ -5265,7 +5271,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV038\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV039\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
