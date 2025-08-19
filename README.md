@@ -90,3 +90,5 @@ REV037: Implementation of Data Transfer Interface from AP to DSP in MTK RV55 Env
 REV038: Use a custom name for the CONFIG setting instead of the platform-defined name.
 
 REV039: Fixed an issue where Force Mute was release in scenarios.
+
+REV040: Change the setting about brown out protection on 4.5W mode.

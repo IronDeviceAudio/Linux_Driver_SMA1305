@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r039, 2025.08.14
+ * r040, 2025.08.19
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -3785,21 +3785,21 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_25_COMPLIM3, 0x00);
 		sma1305_regmap_write(sma1305, SMA1305_26_COMPLIM4, 0xFF);
 		/* BOP Level Setting */
-		sma1305_regmap_write(sma1305, SMA1305_02_BROWN_OUT_PROT1, 0x67);
-		sma1305_regmap_write(sma1305, SMA1305_03_BROWN_OUT_PROT2, 0x62);
-		sma1305_regmap_write(sma1305, SMA1305_04_BROWN_OUT_PROT3, 0x58);
-		sma1305_regmap_write(sma1305, SMA1305_05_BROWN_OUT_PROT8, 0x52);
-		sma1305_regmap_write(sma1305, SMA1305_06_BROWN_OUT_PROT9, 0x4C);
-		sma1305_regmap_write(sma1305, SMA1305_07_BROWN_OUT_PROT10, 0x4A);
+		sma1305_regmap_write(sma1305, SMA1305_02_BROWN_OUT_PROT1, 0x51);
+		sma1305_regmap_write(sma1305, SMA1305_03_BROWN_OUT_PROT2, 0x4F);
+		sma1305_regmap_write(sma1305, SMA1305_04_BROWN_OUT_PROT3, 0x4D);
+		sma1305_regmap_write(sma1305, SMA1305_05_BROWN_OUT_PROT8, 0x4C);
+		sma1305_regmap_write(sma1305, SMA1305_06_BROWN_OUT_PROT9, 0x4B);
+		sma1305_regmap_write(sma1305, SMA1305_07_BROWN_OUT_PROT10, 0x49);
 		sma1305_regmap_write(sma1305, SMA1305_08_BROWN_OUT_PROT11, 0x47);
 		sma1305_regmap_write(sma1305, SMA1305_1C_BROWN_OUT_PROT20, 0x00);
 		sma1305_regmap_write(sma1305, SMA1305_1D_BROWN_OUT_PROT0, 0x85);
-		sma1305_regmap_write(sma1305, SMA1305_27_BROWN_OUT_PROT4, 0xBF);
-		sma1305_regmap_write(sma1305, SMA1305_28_BROWN_OUT_PROT5, 0xFF);
-		sma1305_regmap_write(sma1305, SMA1305_29_BROWN_OUT_PROT12, 0xFF);
-		sma1305_regmap_write(sma1305, SMA1305_2A_BROWN_OUT_PROT13, 0xFF);
-		sma1305_regmap_write(sma1305, SMA1305_2B_BROWN_OUT_PROT14, 0xFF);
-		sma1305_regmap_write(sma1305, SMA1305_2C_BROWN_OUT_PROT15, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_27_BROWN_OUT_PROT4, 0xED);
+		sma1305_regmap_write(sma1305, SMA1305_28_BROWN_OUT_PROT5, 0xED);
+		sma1305_regmap_write(sma1305, SMA1305_29_BROWN_OUT_PROT12, 0xEC);
+		sma1305_regmap_write(sma1305, SMA1305_2A_BROWN_OUT_PROT13, 0xEC);
+		sma1305_regmap_write(sma1305, SMA1305_2B_BROWN_OUT_PROT14, 0xEB);
+		sma1305_regmap_write(sma1305, SMA1305_2C_BROWN_OUT_PROT15, 0xEB);
 		sma1305_regmap_write(sma1305, SMA1305_2D_BROWN_OUT_PROT6, 0xFF);
 		sma1305_regmap_write(sma1305, SMA1305_2E_BROWN_OUT_PROT7, 0xFF);
 		sma1305_regmap_write(sma1305, SMA1305_2F_BROWN_OUT_PROT16, 0xFF);
@@ -5271,7 +5271,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV039\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV040\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
