@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r040, 2025.08.19
+ * r041, 2025.08.28
  *
  * Copyright 2025 Iron Device Corporation
  *
@@ -158,7 +158,7 @@ static struct sma1305_pll_match sma1305_pll_matches[] = {
 	PLL_MATCH("1.536MHz",  "24.576MHz", 1536000,  0x06, 0xC0, 0x88, 0x00),
 	PLL_MATCH("2.822MHz",  "24.554MHz", 2822400,  0x06, 0xD1, 0x88, 0x04),
 	PLL_MATCH("3.072MHz",  "24.576MHz", 3072000,  0x06, 0x60, 0x88, 0x00),
-	PLL_MATCH("6.144MHz",  "24.576MHz", 6144000,  0x06, 0x60, 0x88, 0x04),
+	PLL_MATCH("6.144MHz",  "24.576MHz", 6144000,  0x06, 0xC0, 0x88, 0x08),
 	PLL_MATCH("12.288MHz", "24.576MHz", 12288000, 0x06, 0x60, 0x88, 0x08),
 	PLL_MATCH("19.2MHz",   "24.48MHz", 19200000, 0x06, 0x7B, 0x88, 0x0C),
 	PLL_MATCH("24.576MHz", "24.576MHz", 24576000, 0x06, 0x60, 0x88, 0x0C),
@@ -3736,6 +3736,39 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_AB_BOOST_CTRL4, 0x11);
 		/* Release Time : 83.33us */
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MSB_MASK, SPK_OFFS2_MSB_DEFAULT);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MASK, SPK_OFFS2_DEFAULT_VALUE);
+		/* Comp/Limiter Cotnrol */
+		sma1305_regmap_write(sma1305, SMA1305_11_SYSTEM_CTRL2, 0x20);
+		sma1305_regmap_write(sma1305, SMA1305_22_COMP_HYS_SEL, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_23_COMPLIM1, 0x1F);
+		sma1305_regmap_write(sma1305, SMA1305_24_COMPLIM2, 0x04);
+		sma1305_regmap_write(sma1305, SMA1305_25_COMPLIM3, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_26_COMPLIM4, 0xFF);
+		/* BOP Level Setting */
+		sma1305_regmap_write(sma1305, SMA1305_02_BROWN_OUT_PROT1, 0x51);
+		sma1305_regmap_write(sma1305, SMA1305_03_BROWN_OUT_PROT2, 0x4F);
+		sma1305_regmap_write(sma1305, SMA1305_04_BROWN_OUT_PROT3, 0x4D);
+		sma1305_regmap_write(sma1305, SMA1305_05_BROWN_OUT_PROT8, 0x4C);
+		sma1305_regmap_write(sma1305, SMA1305_06_BROWN_OUT_PROT9, 0x4B);
+		sma1305_regmap_write(sma1305, SMA1305_07_BROWN_OUT_PROT10, 0x49);
+		sma1305_regmap_write(sma1305, SMA1305_08_BROWN_OUT_PROT11, 0x47);
+		sma1305_regmap_write(sma1305, SMA1305_1C_BROWN_OUT_PROT20, 0x00);
+		sma1305_regmap_write(sma1305, SMA1305_1D_BROWN_OUT_PROT0, 0x85);
+		sma1305_regmap_write(sma1305, SMA1305_27_BROWN_OUT_PROT4, 0xED);
+		sma1305_regmap_write(sma1305, SMA1305_28_BROWN_OUT_PROT5, 0xED);
+		sma1305_regmap_write(sma1305, SMA1305_29_BROWN_OUT_PROT12, 0xEC);
+		sma1305_regmap_write(sma1305, SMA1305_2A_BROWN_OUT_PROT13, 0xEC);
+		sma1305_regmap_write(sma1305, SMA1305_2B_BROWN_OUT_PROT14, 0xEB);
+		sma1305_regmap_write(sma1305, SMA1305_2C_BROWN_OUT_PROT15, 0xEB);
+		sma1305_regmap_write(sma1305, SMA1305_2D_BROWN_OUT_PROT6, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2E_BROWN_OUT_PROT7, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_2F_BROWN_OUT_PROT16, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_30_BROWN_OUT_PROT17, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_31_BROWN_OUT_PROT18, 0xFF);
+		sma1305_regmap_write(sma1305, SMA1305_32_BROWN_OUT_PROT19, 0xFF);
 		break;
 	case SMA1305_SPEAKER_4P5W_MODE:
 		/* SPK Volume : -0.5dB */
@@ -3777,6 +3810,10 @@ static int sma1305_spk_rcv_conf(struct snd_soc_component *component)
 		sma1305_regmap_write(sma1305, SMA1305_AB_BOOST_CTRL4, 0x11);
 		/* Release Time : 83.33us */
 		sma1305_regmap_write(sma1305, SMA1305_AD_BOOST_CTRL6, 0x0F);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MSB_MASK, SPK_OFFS2_MSB_DEFAULT);
+		sma1305_regmap_update_bits(sma1305, SMA1305_99_OTP_TRM2,
+				SPK_OFFS2_MASK, SPK_OFFS2_DEFAULT_VALUE);
 		/* Comp/Limiter Cotnrol */
 		sma1305_regmap_write(sma1305, SMA1305_11_SYSTEM_CTRL2, 0x20);
 		sma1305_regmap_write(sma1305, SMA1305_22_COMP_HYS_SEL, 0x00);
@@ -5271,7 +5308,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV040\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV041\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

@@ -92,3 +92,5 @@ REV038: Use a custom name for the CONFIG setting instead of the platform-defined
 REV039: Fixed an issue where Force Mute was release in scenarios.
 
 REV040: Change the setting about brown out protection on 4.5W mode.
+
+REV041: Change the PLL setting to remove the high frequency noise.
