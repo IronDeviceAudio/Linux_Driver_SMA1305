@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r030, 2023.11.03	- initial version  sma1305
+ * r031, 2026.06.02	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -28,6 +28,7 @@
 #include <linux/of_device.h>
 #include <linux/slab.h>
 #include <asm/div64.h>
+#include <linux/gpio/consumer.h>
 #include <linux/interrupt.h>
 #include <linux/of_gpio.h>
 #include <linux/power_supply.h>
@@ -85,7 +86,6 @@ struct sma1305_temp_gain_match {
 };
 
 struct sma1305_priv {
-	enum sma1305_type devtype;
 	struct attribute_group *attr_grp;
 	struct kobject *kobj;
 	struct regmap *regmap;
@@ -124,7 +124,7 @@ struct sma1305_priv {
 	unsigned int last_bclk;
 	unsigned int frame_size;
 	int irq;
-	int gpio_int;
+	struct gpio_desc *irq_gpiod;
 	unsigned int sdo_ch;
 	unsigned int sdo0_sel;
 	unsigned int sdo1_sel;
@@ -3622,9 +3622,9 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 	struct snd_soc_component *component  = dai->component;
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
-	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+	switch (fmt & SND_SOC_DAIFMT_CLOCK_PROVIDER_MASK) {
 
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		dev_info(component->dev,
 			"%s : %s\n", __func__, "I2S/TDM Device mode");
 		/* I2S/PCM clock mode - Device mode */
@@ -3633,7 +3633,7 @@ static int sma1305_dai_set_fmt_amp(struct snd_soc_dai *dai,
 
 		break;
 
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 		dev_info(component->dev,
 			"%s : %s\n", __func__, "I2S/TDM Controller mode");
 		/* I2S/PCM clock mode - Controller mode */
@@ -4443,8 +4443,7 @@ const struct regmap_config sma_i2c_regmap = {
 	.num_reg_defaults = ARRAY_SIZE(sma1305_reg_def),
 };
 
-static int sma1305_i2c_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+static int sma1305_i2c_probe(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305;
 	struct device_node *np = client->dev.of_node;
@@ -4453,7 +4452,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV030\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV031\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
@@ -4471,8 +4470,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 		/* Comment out the code due to GKI build error */
 //		if (sma1305->regmap)
 //			regmap_exit(sma1305->regmap);
-
-		devm_kfree(&client->dev, sma1305);
 
 		return ret;
 	}
@@ -4684,14 +4681,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 					"SDO1 Output disable\n");
 			sma1305->sdo1_sel = SDO1_DISABLE;
 		}
-		sma1305->gpio_int = of_get_named_gpio(np,
-				"sma1305,gpio-int", 0);
-		if (!gpio_is_valid(sma1305->gpio_int)) {
-			dev_err(&client->dev,
-			"Looking up %s property in node %s failed %d\n",
-			"sma1305,gpio-int", client->dev.of_node->full_name,
-			sma1305->gpio_int);
-		}
+
 		sma1305->temp_gain_array =
 			of_get_property(np, "temp-gain-table",
 			&sma1305->temp_gain_array_len);
@@ -4701,7 +4691,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	} else {
 		dev_err(&client->dev,
 			"device node initialization error\n");
-		devm_kfree(&client->dev, sma1305);
 		return -ENODEV;
 	}
 
@@ -4716,7 +4705,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	if ((ret != 0) || ((device_info & 0xF8) != DEVICE_ID)) {
 		dev_err(&client->dev, "device initialization error (%d 0x%02X)",
 				ret, device_info);
-		devm_kfree(&client->dev, sma1305);
 		return -ENODEV;
 	}
 	dev_info(&client->dev, "chip version 0x%02X\n", device_info);
@@ -4743,7 +4731,6 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->fix_gain_count = 0;
 	sma1305->check_amb_temp_status = true;
 
-	sma1305->devtype = (enum sma1305_type) id->driver_data;
 	sma1305->dev = &client->dev;
 	sma1305->kobj = &client->dev.kobj;
 
@@ -4759,57 +4746,52 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	sma1305->num_of_pll_matches =
 		ARRAY_SIZE(sma1305_pll_matches);
 	sma1305->irq = -1;
-
-	if (gpio_is_valid(sma1305->gpio_int)) {
-
-		dev_info(&client->dev, "%s , i2c client name: %s\n",
-			__func__, dev_name(sma1305->dev));
-
-		ret = devm_gpio_request(&client->dev,
-				sma1305->gpio_int, "sma1305-irq");
-		if (ret) {
-			dev_info(&client->dev, "Duplicated gpio request\n");
-			/* return ret; */
-		}
-
-		sma1305->irq = gpio_to_irq(sma1305->gpio_int);
-
-		/* Get SMA1305 IRQ */
-		if (sma1305->irq < 0) {
-			dev_warn(&client->dev, "interrupt disabled\n");
-		} else {
-		/* Request system IRQ for SMA1305 */
-			ret = devm_request_threaded_irq
-				(&client->dev, sma1305->irq,
-				NULL, sma1305_isr, IRQF_ONESHOT | IRQF_SHARED |
-				IRQF_TRIGGER_LOW, "sma1305", sma1305);
-			if (ret < 0) {
-				dev_err(&client->dev, "failed to request IRQ(%u) [%d]\n",
-						sma1305->irq, ret);
-				sma1305->irq = -1;
-				i2c_set_clientdata(client, NULL);
-				devm_kfree(&client->dev, sma1305);
-				return ret;
-			}
-			disable_irq((unsigned int)sma1305->irq);
-		}
-	} else {
-		dev_err(&client->dev,
-			"interrupt signal input pin is not found\n");
-	}
-
 	atomic_set(&sma1305->irq_enabled, false);
 	i2c_set_clientdata(client, sma1305);
+
+	sma1305->irq_gpiod = devm_gpiod_get_optional(&client->dev,
+							 "irq",
+							 GPIOD_IN);
+	if (IS_ERR(sma1305->irq_gpiod)) {
+		dev_warn(&client->dev, "failed to get irq gpio: %ld\n",
+					 PTR_ERR(sma1305->irq_gpiod));
+		sma1305->irq_gpiod = NULL;
+	}
+
+	if (!sma1305->irq_gpiod) {
+		dev_warn(&client->dev, "irq gpio is not defined\n");
+	} else {
+		sma1305->irq = gpiod_to_irq(sma1305->irq_gpiod);
+		if (sma1305->irq < 0) {
+			dev_warn(&client->dev, "failed to get irq number: %d\n",
+					 sma1305->irq);
+			sma1305->irq = -1;
+		} else {
+			ret = devm_request_threaded_irq(&client->dev,
+							sma1305->irq,
+							NULL,
+							sma1305_isr,
+							IRQF_ONESHOT |
+							IRQF_SHARED |
+							IRQF_TRIGGER_LOW,
+							"sma1305",
+							sma1305);
+			if (ret) {
+				dev_warn(&client->dev,
+						 "failed to request IRQ %d: %d\n",
+						 sma1305->irq, ret);
+				sma1305->irq = -1;
+			} else {
+				disable_irq(sma1305->irq);
+			}
+		}
+	}
 
 	ret = devm_snd_soc_register_component(&client->dev,
 			&sma1305_component, sma1305_dai, 1);
 
 	if (ret) {
 		dev_err(&client->dev, "Failed to register component");
-		snd_soc_unregister_component(&client->dev);
-
-		if (sma1305)
-			devm_kfree(&client->dev, sma1305);
 
 		return ret;
 	}
@@ -4827,7 +4809,7 @@ static int sma1305_i2c_probe(struct i2c_client *client,
 	return ret;
 }
 
-static int sma1305_i2c_remove(struct i2c_client *client)
+static void sma1305_i2c_remove(struct i2c_client *client)
 {
 	struct sma1305_priv *sma1305 =
 		(struct sma1305_priv *) i2c_get_clientdata(client);
@@ -4841,11 +4823,7 @@ static int sma1305_i2c_remove(struct i2c_client *client)
 
 		if (sma1305->irq < 0)
 			devm_free_irq(&client->dev, sma1305->irq, sma1305);
-
-		devm_kfree(&client->dev, sma1305);
 	}
-
-	return 0;
 }
 
 static const struct i2c_device_id sma1305_i2c_id[] = {
@@ -4891,6 +4869,6 @@ module_init(sma1305_init);
 module_exit(sma1305_exit);
 
 MODULE_DESCRIPTION("ALSA SoC SMA1305 driver");
-MODULE_AUTHOR("GH Park, <gyuwha.park@irondevice.com>");
+MODULE_AUTHOR("GH Park, <gyuhwa.park@irondevice.com>");
 MODULE_AUTHOR("KS Jo, <kiseok.jo@irondevice.com>");
 MODULE_LICENSE("GPL v2");
