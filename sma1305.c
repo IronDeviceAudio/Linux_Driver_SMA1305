@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r031, 2026.06.02	- initial version  sma1305
+ * r032, 2026.06.05	- initial version  sma1305
  *
  * Copyright 2020 Iron Device Corporation
  *
@@ -386,7 +386,7 @@ static int bytes_ext_get(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol, int reg)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	struct soc_bytes_ext *params = (void *)kcontrol->private_value;
 	unsigned int i, reg_val;
@@ -409,7 +409,7 @@ static int bytes_ext_put(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol, int reg)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	struct soc_bytes_ext *params = (void *)kcontrol->private_value;
 	void *data;
@@ -441,7 +441,7 @@ static int power_up_down_control_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = (long) sma1305->amp_power_status;
@@ -453,7 +453,7 @@ static int power_up_down_control_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -469,7 +469,7 @@ static int power_down_control_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = (long) sma1305->force_amp_power_down;
@@ -481,7 +481,7 @@ static int power_down_control_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	sma1305->force_amp_power_down = (bool) ucontrol->value.integer.value[0];
@@ -497,7 +497,7 @@ static int force_sdo_bypass_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = (long) sma1305->sdo_bypass_flag;
@@ -509,7 +509,7 @@ static int force_sdo_bypass_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -522,7 +522,7 @@ static int force_mute_control_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = (long) sma1305->force_mute;
@@ -534,7 +534,7 @@ static int force_mute_control_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -559,7 +559,7 @@ static int sma1305_input_format_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -573,7 +573,7 @@ static int sma1305_input_format_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -608,7 +608,7 @@ static int sma1305_port_config_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -622,7 +622,7 @@ static int sma1305_port_config_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -645,7 +645,7 @@ static int sma1305_sdo_out1_sel_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -659,7 +659,7 @@ static int sma1305_sdo_out1_sel_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -681,7 +681,7 @@ static int sma1305_sdo_out0_sel_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -695,7 +695,7 @@ static int sma1305_sdo_out0_sel_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -716,7 +716,7 @@ static int sma1305_set_ocp_h_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -730,7 +730,7 @@ static int sma1305_set_ocp_h_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -753,7 +753,7 @@ static int sma1305_vol_slope_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -767,7 +767,7 @@ static int sma1305_vol_slope_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -790,7 +790,7 @@ static int sma1305_mute_slope_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -804,7 +804,7 @@ static int sma1305_mute_slope_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -827,7 +827,7 @@ static int sma1305_vbat_lpf_byp_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -841,7 +841,7 @@ static int sma1305_vbat_lpf_byp_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -864,7 +864,7 @@ static int sma1305_clk_frequency_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -878,7 +878,7 @@ static int sma1305_clk_frequency_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -901,7 +901,7 @@ static int sma1305_spkmode_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -915,7 +915,7 @@ static int sma1305_spkmode_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -942,7 +942,7 @@ static int sma1305_input_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -956,7 +956,7 @@ static int sma1305_input_gain_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -978,7 +978,7 @@ static int sma1305_input_r_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -992,7 +992,7 @@ static int sma1305_input_r_gain_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1017,7 +1017,7 @@ static int sma1305_set_dly_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1031,7 +1031,7 @@ static int sma1305_set_dly_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1052,7 +1052,7 @@ static int sma1305_spk_hysfb_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1066,7 +1066,7 @@ static int sma1305_spk_hysfb_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1117,7 +1117,7 @@ static int sma1305_bop_hold_time_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1131,7 +1131,7 @@ static int sma1305_bop_hold_time_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1168,7 +1168,7 @@ static int sma1305_tone_freq_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1182,7 +1182,7 @@ static int sma1305_tone_freq_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1243,7 +1243,7 @@ static int sma1305_ocp_filter_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1257,7 +1257,7 @@ static int sma1305_ocp_filter_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1281,7 +1281,7 @@ static int sma1305_ocp_lvl_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1295,7 +1295,7 @@ static int sma1305_ocp_lvl_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1318,7 +1318,7 @@ static int sma1305_i_op1_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1332,7 +1332,7 @@ static int sma1305_i_op1_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1353,7 +1353,7 @@ static int sma1305_i_op2_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1367,7 +1367,7 @@ static int sma1305_i_op2_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1389,7 +1389,7 @@ static int sma1305_fdpec_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1403,7 +1403,7 @@ static int sma1305_fdpec_gain_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1423,7 +1423,7 @@ static int sma1305_lr_delay_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1437,7 +1437,7 @@ static int sma1305_lr_delay_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1458,7 +1458,7 @@ static int sma1305_otp_mode_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1472,7 +1472,7 @@ static int sma1305_otp_mode_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1506,7 +1506,7 @@ static int sma1305_pmt_update_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1520,7 +1520,7 @@ static int sma1305_pmt_update_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1581,7 +1581,7 @@ static int sma1305_gm_ctrl_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1595,7 +1595,7 @@ static int sma1305_gm_ctrl_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1633,7 +1633,7 @@ static int sma1305_flt_vdd_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1647,7 +1647,7 @@ static int sma1305_flt_vdd_gain_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1670,7 +1670,7 @@ static int sma1305_slope_off_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1684,7 +1684,7 @@ static int sma1305_slope_off_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1705,7 +1705,7 @@ static int sma1305_slope_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1719,7 +1719,7 @@ static int sma1305_slope_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1741,7 +1741,7 @@ static int sma1305_set_rmp_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1755,7 +1755,7 @@ static int sma1305_set_rmp_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1777,7 +1777,7 @@ static int sma1305_set_ocl_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1791,7 +1791,7 @@ static int sma1305_set_ocl_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1813,7 +1813,7 @@ static int sma1305_set_comp_i_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1827,7 +1827,7 @@ static int sma1305_set_comp_i_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1849,7 +1849,7 @@ static int sma1305_set_comp_p_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1863,7 +1863,7 @@ static int sma1305_set_comp_p_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1887,7 +1887,7 @@ static int sma1305_set_dt_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1901,7 +1901,7 @@ static int sma1305_set_dt_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1926,7 +1926,7 @@ static int sma1305_set_dt_off_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -1940,7 +1940,7 @@ static int sma1305_set_dt_off_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -1974,7 +1974,7 @@ static int sma1305_pll_div_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -1988,7 +1988,7 @@ static int sma1305_pll_div_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2011,7 +2011,7 @@ static int sma1305_mon_osc_pll_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2025,7 +2025,7 @@ static int sma1305_mon_osc_pll_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2048,7 +2048,7 @@ static int sma1305_interface_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2062,7 +2062,7 @@ static int sma1305_interface_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2083,7 +2083,7 @@ static int sma1305_sck_rate_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2097,7 +2097,7 @@ static int sma1305_sck_rate_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2118,7 +2118,7 @@ static int sma1305_data_w_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2132,7 +2132,7 @@ static int sma1305_data_w_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2154,7 +2154,7 @@ static int sma1305_tdm_slot1_rx_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2168,7 +2168,7 @@ static int sma1305_tdm_slot1_rx_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2190,7 +2190,7 @@ static int sma1305_tdm_slot2_rx_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2204,7 +2204,7 @@ static int sma1305_tdm_slot2_rx_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2226,7 +2226,7 @@ static int sma1305_tdm_slot1_tx_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2240,7 +2240,7 @@ static int sma1305_tdm_slot1_tx_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2262,7 +2262,7 @@ static int sma1305_tdm_slot2_tx_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2276,7 +2276,7 @@ static int sma1305_tdm_slot2_tx_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2298,7 +2298,7 @@ static int sma1305_clk_mon_time_sel_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2312,7 +2312,7 @@ static int sma1305_clk_mon_time_sel_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2334,7 +2334,7 @@ static int sma1305_boost_mode_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2348,7 +2348,7 @@ static int sma1305_boost_mode_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2370,7 +2370,7 @@ static int sma1305_bst_freq_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	unsigned int val;
 
@@ -2384,7 +2384,7 @@ static int sma1305_bst_freq_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2405,7 +2405,7 @@ static int sma1305_min_duty_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val;
 
@@ -2419,7 +2419,7 @@ static int sma1305_min_duty_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int sel = (int)ucontrol->value.integer.value[0];
 
@@ -2479,7 +2479,7 @@ static int speaker_receiver_mode_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = sma1305->spk_rcv_mode;
@@ -2491,7 +2491,7 @@ static int speaker_receiver_mode_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component =
-		snd_soc_kcontrol_component(kcontrol);
+		snd_kcontrol_chip(kcontrol);
 	struct sma1305_priv *sma1305 = snd_soc_component_get_drvdata(component);
 	int val = 0;
 
@@ -4360,7 +4360,7 @@ static struct attribute_group sma1305_attr_group = {
 static int sma1305_probe(struct snd_soc_component *component)
 {
 	struct snd_soc_dapm_context *dapm =
-		snd_soc_component_get_dapm(component);
+		snd_soc_component_to_dapm(component);
 	char *dapm_widget_str = NULL;
 	int prefix_len = 0, str_max = 30;
 
@@ -4452,7 +4452,7 @@ static int sma1305_i2c_probe(struct i2c_client *client)
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV031\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV032\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
