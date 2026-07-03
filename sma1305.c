@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r030, 2026.06.23	- initial version  sma1305
+ * r031, 2026.07.03	- initial version  sma1305
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -334,7 +334,7 @@ EXPORT_SYMBOL(sma1305_set_callback_func);
 static int sma1305_regmap_write(struct sma1305_priv *sma1305,
 			unsigned int reg, unsigned int val)
 {
-	int ret;
+	int ret = -EINVAL;
 	int cnt = sma1305->retry_cnt;
 
 	while (cnt--) {
@@ -343,7 +343,7 @@ static int sma1305_regmap_write(struct sma1305_priv *sma1305,
 			dev_err(sma1305->dev,
 				"%s: Failed to write [0x%02X] (%d)\n",
 					__func__, reg, ret);
-			if (gCallback.set_i2c_err)
+			if ((cnt == 0) && gCallback.set_i2c_err)
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
@@ -355,7 +355,7 @@ static int sma1305_regmap_write(struct sma1305_priv *sma1305,
 static int sma1305_regmap_update_bits(struct sma1305_priv *sma1305,
 		unsigned int reg, unsigned int mask, unsigned int val)
 {
-	int ret;
+	int ret = -EINVAL;
 	int cnt = sma1305->retry_cnt;
 
 	while (cnt--) {
@@ -364,7 +364,7 @@ static int sma1305_regmap_update_bits(struct sma1305_priv *sma1305,
 			dev_err(sma1305->dev,
 				"%s: Failed to update bits [0x%02X] (%d)\n",
 					__func__, reg, ret);
-			if (gCallback.set_i2c_err)
+			if ((cnt == 0) && gCallback.set_i2c_err)
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
@@ -376,7 +376,7 @@ static int sma1305_regmap_update_bits(struct sma1305_priv *sma1305,
 static int sma1305_regmap_read(struct sma1305_priv *sma1305,
 			unsigned int reg, unsigned int *val)
 {
-	int ret;
+	int ret = -EINVAL;
 	int cnt = sma1305->retry_cnt;
 
 	while (cnt--) {
@@ -385,7 +385,7 @@ static int sma1305_regmap_read(struct sma1305_priv *sma1305,
 			dev_err(sma1305->dev,
 				"%s: Failed to read [0x%02X] (%d)\n",
 					__func__, reg, ret);
-			if (gCallback.set_i2c_err)
+			if ((cnt == 0) && gCallback.set_i2c_err)
 				gCallback.set_i2c_err(sma1305->dev, ret);
 		} else
 			break;
@@ -4638,7 +4638,7 @@ static int sma1305_i2c_probe(struct i2c_client *client)
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV030\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV031\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);
