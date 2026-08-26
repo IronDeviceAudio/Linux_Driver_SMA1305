@@ -70,3 +70,6 @@ REV029: Apply changes according to the kernel version.
 REV030: Integrated Samsung-requested changes and enhancement code from the existing codebase.
 
 REV031: Changed to register the I2C error through the callback only once when the I2C retry count reaches zero.
+
+REV032: Register name in snd_soc_component_driver structure.
+		Modified power sequence to reduce pop noise.

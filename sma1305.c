@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r031, 2026.07.03	- initial version  sma1305
+ * r032, 2026.09.01	- initial version  sma1305
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -3214,11 +3214,15 @@ static int sma1305_startup(struct snd_soc_component *component)
 	sma1305_regmap_update_bits(sma1305, SMA1305_A2_TOP_MAN1,
 			PLL_MASK, PLL_ON);
 
+	sma1305_regmap_update_bits(sma1305, SMA1305_00_SYSTEM_CTRL,
+			POWER_MASK, POWER_ON);
+
 	sma1305_regmap_update_bits(sma1305, SMA1305_10_SYSTEM_CTRL1,
 			SPK_MODE_MASK, SPK_MONO);
 
-	sma1305_regmap_update_bits(sma1305, SMA1305_00_SYSTEM_CTRL,
-			POWER_MASK, POWER_ON);
+	mdelay(2);
+	sma1305_regmap_update_bits(sma1305, SMA1305_3C_TEST2,
+			HSDM_MASK, HSDM_ON);
 
 	if ((sma1305->force_mute) == false)
 		sma1305_regmap_update_bits(sma1305, SMA1305_0E_MUTE_VOL_CTRL,
@@ -3278,6 +3282,9 @@ static int sma1305_shutdown(struct snd_soc_component *component)
 	 * and Mute slope time(15ms)
 	 */
 	msleep(55);
+
+	sma1305_regmap_update_bits(sma1305, SMA1305_3C_TEST2,
+			HSDM_MASK, HSDM_OFF);
 
 	sma1305_regmap_update_bits(sma1305, SMA1305_10_SYSTEM_CTRL1,
 			SPK_MODE_MASK, SPK_OFF);
@@ -4349,6 +4356,12 @@ static int sma1305_reset(struct snd_soc_component *component)
 
 	sma1305_spk_rcv_conf(component);
 
+	sma1305_regmap_write(sma1305,
+			SMA1305_3B_TEST1, SMA1305_CODE_EN);
+
+	sma1305_regmap_update_bits(sma1305, SMA1305_3C_TEST2,
+			HSDM_MASK, HSDM_OFF);
+
 	return 0;
 }
 
@@ -4603,6 +4616,7 @@ static void sma1305_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver sma1305_component = {
+	.name = "sma1305",
 	.probe = sma1305_probe,
 	.remove = sma1305_remove,
 	.suspend = sma1305_suspend,
@@ -4638,7 +4652,7 @@ static int sma1305_i2c_probe(struct i2c_client *client)
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV031\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV032\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

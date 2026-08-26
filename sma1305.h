@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r031, 2026.07.03
+ * r032, 2026.09.01
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -65,6 +65,9 @@ enum {
 
 #define SMA1305_OFFSET_DEFAULT_MODE		0x00
 #define SMA1305_OFFSET_BURNING_MODE		0x01
+
+#define SMA1305_CODE_EN				0x5A
+#define SMA1305_CODE_DIS			0x00
 /*
  * SMA1305 Register Definition
  */
@@ -222,6 +225,11 @@ enum {
 #define PLL_MASK			(1<<6)
 #define PLL_ON				(0<<6)
 #define PLL_OFF				(1<<6)
+
+/* HSDM On/Off */
+#define HSDM_MASK			(1<<5)
+#define HSDM_ON				(0<<5)
+#define HSDM_OFF			(1<<5)
 
 /* Input Format */
 #define I2S_MODE_MASK		(7<<4)
