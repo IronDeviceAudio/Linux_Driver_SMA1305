@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r032, 2026.09.01	- initial version  sma1305
+ * r033, 2026.09.03	- initial version  sma1305
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -4652,7 +4652,7 @@ static int sma1305_i2c_probe(struct i2c_client *client)
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV032\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV033\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

@@ -73,3 +73,5 @@ REV031: Changed to register the I2C error through the callback only once when th
 
 REV032: Register name in snd_soc_component_driver structure.
 		Modified power sequence to reduce pop noise.
+
+REV033: Corrected a register typo.

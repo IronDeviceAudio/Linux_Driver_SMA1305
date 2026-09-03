@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * sma1305.h -- sma1305 ALSA SoC Audio driver
  *
- * r032, 2026.09.01
+ * r033, 2026.09.03
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -227,9 +227,9 @@ enum {
 #define PLL_OFF				(1<<6)
 
 /* HSDM On/Off */
-#define HSDM_MASK			(1<<5)
-#define HSDM_ON				(0<<5)
-#define HSDM_OFF			(1<<5)
+#define HSDM_MASK			(1<<4)
+#define HSDM_ON				(0<<4)
+#define HSDM_OFF			(1<<4)
 
 /* Input Format */
 #define I2S_MODE_MASK		(7<<4)
