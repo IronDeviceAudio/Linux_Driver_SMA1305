@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* sma1305.c -- sma1305 ALSA SoC Audio driver
  *
- * r033, 2026.09.03	- initial version  sma1305
+ * r034, 2026.09.22	- initial version  sma1305
  *
  * Copyright 2026 Iron Device Corporation
  *
@@ -3472,16 +3472,27 @@ static int sma1305_dai_hw_params_amp(struct snd_pcm_substream *substream,
 	unsigned int input_format = 0;
 	unsigned int bclk = 0;
 
-	if (sma1305->format == SND_SOC_DAIFMT_DSP_A)
+	if (sma1305->format == SND_SOC_DAIFMT_DSP_A) {
 		bclk = params_rate(params) * sma1305->frame_size;
-	else
+
+		dev_info(component->dev,
+			"%s : DSP_A - rate = %d : frame size = %d\n",
+			__func__, params_rate(params), sma1305->frame_size);
+	} else if (sma1305->format == SND_SOC_DAIFMT_I2S) {
+		bclk = params_rate(params) * params_physical_width(params) * 2;
+
+		dev_info(component->dev,
+			"%s : I2S - rate = %d : bit size = %d : channel = 2\n",
+			__func__, params_rate(params), params_width(params));
+	} else {
 		bclk = params_rate(params) * params_physical_width(params)
 			* params_channels(params);
 
-	dev_info(component->dev,
-			"%s : rate = %d : bit size = %d : channel = %d\n",
-			__func__, params_rate(params), params_width(params),
-			params_channels(params));
+		dev_info(component->dev,
+			"%s : fmt = %d : rate = %d : bit size = %d : channel = %d\n",
+			__func__, sma1305->format, params_rate(params),
+			params_width(params), params_channels(params));
+	}
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 
@@ -4652,7 +4663,7 @@ static int sma1305_i2c_probe(struct i2c_client *client)
 	unsigned int device_info;
 	int retry_cnt = SMA1305_I2C_RETRY_COUNT;
 
-	dev_info(&client->dev, "%s is here. Driver version REV033\n", __func__);
+	dev_info(&client->dev, "%s is here. Driver version REV034\n", __func__);
 
 	sma1305 = devm_kzalloc(&client->dev, sizeof(struct sma1305_priv),
 							GFP_KERNEL);

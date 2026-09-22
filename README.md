@@ -75,3 +75,5 @@ REV032: Register name in snd_soc_component_driver structure.
 		Modified power sequence to reduce pop noise.
 
 REV033: Corrected a register typo.
+
+REV034: Set I2S format to 2-channel only.
